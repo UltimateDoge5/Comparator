@@ -1,5 +1,8 @@
-import { NextApiRequest, NextApiResponse } from "next";
+import type { NextApiRequest, NextApiResponse } from "next";
+import type { CheerioAPI } from "cheerio";
 import { load } from "cheerio";
+
+let $: CheerioAPI;
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 	const { name } = req.query;
@@ -10,7 +13,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 		headers: {
 			"Content-Type": "application/json",
 			// Temporary solution for testing
-			Authorization: "Bearer eyJhbGciOiJIUzI1NiJ9.eyJmaWx0ZXIiOiJOT1QgQHBhcnRuZXJ0YXJnZXQiLCJ1c2VyR3JvdXBzIjpbIlU6UHVibGljIiwiYW5vbnltb3VzIl0sInNlYXJjaEh1YiI6ImVudGVwcmlzZVNlYXJjaCIsInY4Ijp0cnVlLCJvcmdhbml6YXRpb24iOiJpbnRlbGNvcnBvcmF0aW9ucHJvZHVjdGlvbmU3OG4yNXM2IiwidXNlcklkcyI6W3sicHJvdmlkZXIiOiJFbWFpbCBTZWN1cml0eSBQcm92aWRlciIsIm5hbWUiOiJhbm9ueW1vdXMiLCJ0eXBlIjoiVXNlciJ9XSwicm9sZXMiOlsicXVlcnlFeGVjdXRvciJdLCJleHAiOjE2NzI1MDIwNTIsImlhdCI6MTY3MjQxNTY1Mn0.LO4_DHszF2iDR5nr67f5VIPCeU7zhdOYFncBk40pAlo"
+			Authorization: process.env.INTEL_TOKEN as string
 		},
 		body: JSON.stringify({
 			q: name,
@@ -26,8 +29,15 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
 	const data = await query.json();
 
-	const url = data.results[0].clickUri;
+	let url = data.results[0].uri;
 	console.log("Fetching page: ", url);
+
+	// Sometimes the url path is good, but the last part is wrong
+	if (!url.includes("specifications")) {
+		const temp = url.split("/");
+		temp[temp.length - 1] = "specifications";
+		url = temp.join("/");
+	}
 
 	// Get the data
 	const page = await fetch(url);
@@ -38,32 +48,22 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 		return;
 	}
 
-	const $ = load(await page.text());
+	$ = load(await page.text());
 
-	// Helper function to get specific data
-	const getParameter = (name: string) => {
-		const selector = $(".tech-label span");
-		let label = selector.filter((i, el) => $(el).text() === name);
-
-		if (label.length === 0) {
-			label = selector.filter((i, el) => $(el).text().includes(name));
-		}
-
-		if (label.length === 0) {
-			return null;
-		}
-
-		return label.parent().parent().find(".tech-data span").text();
-	};
+	const cpuName = getParameter("Processor Number");
 
 	const cpu = {
-		name: getParameter("Processor Number"),
-		lithography: (() => getParameter("Lithography")?.replace("nm", "")?.trim())(),
-		cores: parseInt(getParameter("Total Cores")?.split(" ")[0] ?? "-1"),
-		threads: parseInt(getParameter("Total Threads")?.split(" ")[0] ?? "-1"),
-		baseFrequency: parseFloat(getParameter("Processor Base Frequency")?.split(" ")[0] ?? "-1"),
-		maxFrequency: parseFloat(getParameter("Max Turbo Frequency")?.split(" ")[0] ?? "-1"),
-		tdp: parseInt(getParameter("TDP")?.split(" ")[0] ?? "-1"),
+		name: cpuName,
+		lithography: getParameter("Lithography"),
+		cores: {
+			total: getFloatParameter("Total Cores"),
+			efficient: getFloatParameter("# of Efficient-cores"),
+			performance: getFloatParameter("# of Performance-cores")
+		},
+		threads: getFloatParameter("Total Threads"),
+		baseFrequency: getFloatParameter("Processor Base Frequency"),
+		maxFrequency: getFloatParameter("Max Turbo Frequency"),
+		tdp: getFloatParameter("TDP") || getFloatParameter("Maximum Turbo Power"),
 		launchDate: (() => {
 			const date = getParameter("Launch Date");
 
@@ -79,30 +79,67 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 			};
 		})(),
 		memory: {
-			type: (() => {
-				const type = getParameter("Memory Types");
-
-				if (!type) {
-					return null;
-				}
-
-				return type.split(",").map(t => t.trim());
-			})(),
-			channels: parseInt(getParameter("Max # of Memory Channels")?.split(" ")[0] ?? "-1"),
-			maxCapacity: parseInt(getParameter("Max Memory Size")?.split(" ")[0] ?? "-1")
+			type:getParameter("Memory Types"),
+			// type: (() => {
+			// 	const type = getParameter("Memory Types");
+			//
+			// 	if (!type) {
+			// 		return null;
+			// 	}
+			//
+			// 	return type.split("\n").map(t => t.trim());
+			// })(),
+			maxSize: getFloatParameter("Max Memory Size")
 		},
-		graphics: {
-			baseFrequency: parseFloat(getParameter("Graphics Base Frequency")?.split(" ")[0] ?? "-1"),
-			maxFrequency: parseFloat(getParameter("Graphics Max Dynamic Frequency")?.split(" ")[0] ?? "-1"),
-			maxMemory: parseInt(getParameter("Graphics Max Memory")?.split(" ")[0] ?? "-1"),
+		graphics: cpuName?.includes("F") ? false : {
+			baseFrequency: getFloatParameter("Graphics Base Frequency"),
+			maxFrequency: getFloatParameter("Graphics Max Dynamic Frequency"),
 			directX: getParameter("DirectX* Support"),
-			opengl: getParameter("OpenGL* Support")
+			opengl: getParameter("OpenGL* Support"),
+			displays: getFloatParameter("Max # of Displays Supported")
 		},
 		pcie: getParameter("PCI Express Revision"),
-		"64bit": getParameter("Instruction Set") === "Yes",
+		"64bit": getParameter("Instruction Set") === "Yes"
 	};
 
 	res.status(200).json(cpu);
+};
+
+const getParameter = (name: string) => {
+	const selector = $(".tech-label span");
+	let label = selector.filter((i, el) => $(el).text() === name);
+
+	if (label.length === 0) {
+		label = selector.filter((i, el) => $(el).text().includes(name));
+	}
+
+	if (label.length === 0) {
+		return null;
+	}
+
+	return label.parent().parent().find(".tech-data span").text();
+};
+
+const getFloatParameter = (name: string) => {
+	const param = getParameter(name)?.split(" ");
+
+	let multiplier: number;
+	switch (param?.[1]) {
+		case "GHz":
+			multiplier = 1e9;
+			break;
+		case "MHz":
+			multiplier = 1e6;
+			break;
+		case "KHz":
+			multiplier = 1e3;
+			break;
+		default:
+			multiplier = 1;
+	}
+
+	const floatValue = parseFloat(param?.[0] ?? "") * multiplier;
+	return isNaN(floatValue) ? null : floatValue;
 };
 
 
