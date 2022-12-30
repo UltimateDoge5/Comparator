@@ -5,7 +5,7 @@ import { load } from "cheerio";
 let $: CheerioAPI;
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
-	const { name } = req.query;
+	const { model } = req.query;
 
 	// Get the url
 	const query = await fetch("https://platform.cloud.coveo.com/rest/search/v2?f:@tabfilter=[Products]", {
@@ -13,12 +13,12 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 		headers: {
 			"Content-Type": "application/json",
 			// Temporary solution for testing
-			Authorization: process.env.INTEL_TOKEN as string
+			Authorization: process.env.INTEL_TOKEN as string,
 		},
 		body: JSON.stringify({
-			q: name,
-			numberOfResults: 1
-		})
+			q: model,
+			numberOfResults: 1,
+		}),
 	});
 
 	if (!query.ok) {
@@ -54,52 +54,34 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
 	const cpu = {
 		name: cpuName,
+		manufacturer: "Intel",
 		lithography: getParameter("Lithography"),
 		cores: {
 			total: getFloatParameter("Total Cores"),
 			efficient: getFloatParameter("# of Efficient-cores"),
-			performance: getFloatParameter("# of Performance-cores")
+			performance: getFloatParameter("# of Performance-cores"),
 		},
 		threads: getFloatParameter("Total Threads"),
-		baseFrequency: getFloatParameter("Processor Base Frequency"),
+		baseFrequency:
+			getFloatParameter("Processor Base Frequency") || getFloatParameter("Performance-core Base Frequency"),
 		maxFrequency: getFloatParameter("Max Turbo Frequency"),
 		tdp: getFloatParameter("TDP") || getFloatParameter("Maximum Turbo Power"),
-		launchDate: (() => {
-			const date = getParameter("Launch Date");
-
-			const [quarter, year] = date?.split("'") ?? [];
-
-			if (!quarter || !year) {
-				return null;
-			}
-
-			return {
-				quarter: quarter.trim(),
-				year: parseInt(year.trim())
-			};
-		})(),
+		launchDate: getParameter("Launch Date"),
 		memory: {
-			type:getParameter("Memory Types"),
-			// type: (() => {
-			// 	const type = getParameter("Memory Types");
-			//
-			// 	if (!type) {
-			// 		return null;
-			// 	}
-			//
-			// 	return type.split("\n").map(t => t.trim());
-			// })(),
-			maxSize: getFloatParameter("Max Memory Size")
+			type: getParameter("Memory Types"),
+			maxSize: getFloatParameter("Max Memory Size"),
 		},
-		graphics: cpuName?.includes("F") ? false : {
-			baseFrequency: getFloatParameter("Graphics Base Frequency"),
-			maxFrequency: getFloatParameter("Graphics Max Dynamic Frequency"),
-			directX: getParameter("DirectX* Support"),
-			opengl: getParameter("OpenGL* Support"),
-			displays: getFloatParameter("Max # of Displays Supported")
-		},
+		graphics: cpuName?.includes("F")
+			? false
+			: {
+					baseFrequency: getFloatParameter("Graphics Base Frequency"),
+					maxFrequency: getFloatParameter("Graphics Max Dynamic Frequency"),
+					directX: getParameter("DirectX* Support"),
+					opengl: getParameter("OpenGL* Support"),
+					displays: getFloatParameter("Max # of Displays Supported"),
+			  },
 		pcie: getParameter("PCI Express Revision"),
-		"64bit": getParameter("Instruction Set") === "Yes"
+		"64bit": getParameter("Instruction Set") === "Yes",
 	};
 
 	res.status(200).json(cpu);
@@ -141,6 +123,5 @@ const getFloatParameter = (name: string) => {
 	const floatValue = parseFloat(param?.[0] ?? "") * multiplier;
 	return isNaN(floatValue) ? null : floatValue;
 };
-
 
 export default handler;
