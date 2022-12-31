@@ -1,13 +1,14 @@
 import Head from "next/head";
 import { useEffect, useState } from "react";
-import type { CPU } from "../types";
+import type { CPU, Manufacturer } from "../../types";
 import Comparison from "../components/comparison";
+import fetchCPU from "../util/fetchCPU";
 
 export default function Index() {
 	const [cpus, setCpus] = useState<[CPU | null, CPU | null]>([null, null]);
 	const [selection, setSelection] = useState<Selection[]>([
-		{ manufacturer: "Intel", model: "" },
-		{ manufacturer: "Intel", model: "" },
+		{ manufacturer: "intel", model: "" },
+		{ manufacturer: "intel", model: "" }
 	]);
 
 	// Load the cpus from url
@@ -19,8 +20,16 @@ export default function Index() {
 		if (cpu1 && cpu2) {
 			setSelection([
 				{ manufacturer: cpu1.split("-")[0], model: decodeURIComponent(cpu1.split("-")[1]) },
-				{ manufacturer: cpu2.split("-")[0], model: decodeURIComponent(cpu2.split("-")[1]) },
+				{ manufacturer: cpu2.split("-")[0], model: decodeURIComponent(cpu2.split("-")[1]) }
 			]);
+
+			// Load cpus
+			const cpusFetch = [
+				fetchCPU(cpu1.split("-")[0] as Manufacturer, decodeURIComponent(cpu1.split("-")[1])),
+				fetchCPU(cpu2.split("-")[0] as Manufacturer, decodeURIComponent(cpu2.split("-")[1]))
+			];
+
+			Promise.all(cpusFetch).then((cpus) => setCpus(cpus as [CPU, CPU]));
 		}
 	}, []);
 
@@ -55,7 +64,7 @@ export default function Index() {
 				<h1 className="text-6xl font-semibold text-white">Compare CPUs</h1>
 				<h2 className="mb-4 text-2xl text-white">Search for a CPU and compare it to another one</h2>
 
-				<section className="grid grid-cols-2 gap-8 divide-x p-2">
+				<section className="grid grid-cols-2 gap-8 p-2">
 					<div className="flex flex-col items-center gap-4 rounded-md border bg-white bg-opacity-10 p-4">
 						<div className="flex items-center gap-4">
 							<select
@@ -63,20 +72,20 @@ export default function Index() {
 								onChange={(e) =>
 									setSelection((prev) => [
 										{ manufacturer: e.target.value, model: prev[0].model },
-										prev[1],
+										prev[1]
 									])
 								}
 							>
-								<option>Intel</option>
-								<option>AMD</option>
+								<option value="intel">Intel</option>
+								<option value="amd">AMD</option>
 							</select>
 							<input
 								className="rounded-md bg-gray-200 p-2"
-								placeholder="Search for a CPU"
+								placeholder={selection[0].manufacturer === "intel" ? "i5-5400" : "Ryzen 7 5800H"}
 								onChange={(e) =>
 									setSelection((prev) => [
 										{ manufacturer: prev[0].manufacturer, model: e.target.value },
-										prev[1],
+										prev[1]
 									])
 								}
 								value={selection[0].model}
@@ -114,20 +123,20 @@ export default function Index() {
 								onChange={(e) =>
 									setSelection((prev) => [
 										prev[0],
-										{ manufacturer: e.target.value, model: prev[1].model },
+										{ manufacturer: e.target.value, model: prev[1].model }
 									])
 								}
 							>
-								<option>Intel</option>
-								<option>AMD</option>
+								<option value="intel">Intel</option>
+								<option value="amd">AMD</option>
 							</select>
 							<input
 								className="rounded-md bg-gray-200 p-2"
-								placeholder="Search for a CPU"
+								placeholder={selection[1].manufacturer === "intel" ? "i7-9700K" : "Ryzen 7 3700X"}
 								onChange={(e) =>
 									setSelection((prev) => [
 										prev[0],
-										{ manufacturer: prev[1].manufacturer, model: e.target.value },
+										{ manufacturer: prev[1].manufacturer, model: e.target.value }
 									])
 								}
 								value={selection[1].model}
@@ -162,13 +171,13 @@ export default function Index() {
 				<section className="w-1/2">
 					<div className="mb-8 flex justify-center gap-6 text-white">
 						<div className="flex gap-2">
-							<div className="h-6 w-12 bg-green-500" /> Better
+							<div className="h-6 w-12 bg-green-500 rounded" /> Better
 						</div>
 						<div className="flex gap-2">
-							<div className="h-6 w-12 bg-red-500" /> Worse
+							<div className="h-6 w-12 bg-red-500 rounded" /> Worse
 						</div>
 						<div className="flex gap-2">
-							<div className="h-6 w-12 bg-yellow-500" /> Unable to compare
+							<div className="h-6 w-12 bg-yellow-500 rounded" /> Unable to compare
 						</div>
 					</div>
 					{cpus[0] != null && cpus[1] != null && <Comparison cpus={cpus as [CPU, CPU]} />}

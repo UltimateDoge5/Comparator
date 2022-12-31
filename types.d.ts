@@ -1,27 +1,41 @@
 export interface CPU {
-	name: string;
-	lithography: string;
-	manufacturer: string;
+	name: string | null;
+	lithography: string | null;
+	manufacturer: Manufacturer;
 	cores: Cores;
-	cache: string;
-	threads: number;
-	baseFrequency: number;
-	maxFrequency: number;
-	tdp: number;
+	cache: number | null;
+	threads: number | null;
+	baseFrequency: number | null;
+	maxFrequency: number | null;
+	tdp: number | null;
 	launchDate: string;
 	memory: Memory;
-	graphics: boolean;
-	pcie: string;
+	graphics: false | Graphics;
+	pcie: string | null;
 	"64bit": boolean;
+	source: string;
 }
 
-export interface Cores {
-	total: number;
-	efficient: number;
-	performance: number;
+interface Cores {
+	total: number | null;
+	efficient: number | null;
+	performance: number | null;
 }
 
-export interface Memory {
-	type: string;
-	maxSize: number;
+interface Memory {
+	type: string | null;
+	maxSize: number | null;
 }
+
+interface Graphics {
+	baseFrequency: number | null;
+	maxFrequency: number | null;
+	displays: number | null;
+}
+
+export const Manufacturer = {
+	INTEL: "intel",
+	AMD: "amd"
+} as const;
+
+export type Manufacturer = typeof Manufacturer[keyof typeof Manufacturer];
