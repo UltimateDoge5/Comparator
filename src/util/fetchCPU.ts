@@ -1,14 +1,20 @@
 import type { CPU, Manufacturer } from "../../types";
 
-const fetchCPU = async (manufacturer: Manufacturer, model: string) => new Promise<CPU>(async (resolve, reject) => {
+const fetchCPU = async (manufacturer: Manufacturer, model: string) => new Promise<Result>(async (resolve) => {
 	const response = await fetch(`/api/cpu/${manufacturer.toLowerCase()}?model=${model}`);
 
 	if (!response.ok) {
-		reject(response.text() || response.statusText);
+		// resolve(null response.text() || response.statusText);
+		resolve({ error: await response.text() || response.statusText, data: {} as CPU });
 		return;
 	}
 
-	resolve(await response.json());
+	resolve({ data: await response.json() as CPU, error: null });
 });
+
+interface Result {
+	data: CPU;
+	error: string | null;
+}
 
 export default fetchCPU;

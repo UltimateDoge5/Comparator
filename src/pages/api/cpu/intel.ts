@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import type { CheerioAPI} from "cheerio";
+import type { CheerioAPI } from "cheerio";
 import { load } from "cheerio";
 import elementSelector from "../../../util/selectors";
 import type { CPU } from "../../../../types";
@@ -40,7 +40,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 	const data = await query.json();
 
 	let url = data.results[0].uri;
-	console.log("Fetching page: ", url);
+	// console.log("Fetching page: ", url);
 
 	// Sometimes the url path is good, but the last part is wrong
 	if (!url.includes("specifications")) {
@@ -59,10 +59,6 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 				Authorization: token
 			}
 		});
-
-		// if (token) {
-		// 	await writeFile("./token.txt", token);
-		// }
 	}
 
 	if (!page.ok) {
@@ -71,9 +67,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 		return;
 	}
 
-	const $ = load(await page.text());
-
-
+	$ = load(await page.text());
 
 	const cpuName = getParameter("Processor Number");
 
@@ -112,7 +106,11 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 	res.status(200).json(cpu);
 };
 
-const getParameter = (name: string) => elementSelector($, ".tech-label span", name)?.parent().parent().find(".tech-value").text() || null;
+const getParameter = (name: string) => elementSelector($, ".tech-label span", name)
+	?.parent()
+	.parent()
+	.find(".tech-data span")
+	.text() ?? null;
 const getFloatParameter = (name: string) => {
 	const param = getParameter(name)?.split(" ");
 
@@ -146,6 +144,5 @@ const refreshToken = async () => {
 	const data = await token.json();
 	return data.token;
 };
-
 
 export default handler;

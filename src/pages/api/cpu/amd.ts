@@ -67,6 +67,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 	//Get the specs page
 	const specsPage = await axios.get(`https://www.amd.com${specsLink}`);
 
+	// console.log("Fetching page: ", `https://www.amd.com${specsLink}`);
+
 	if (specsPage.status !== 200) {
 		console.error(specsPage.statusText);
 		res.status(500).send("Error while fetching the specs page");
