@@ -26,8 +26,8 @@ export default function Index() {
 					<Selector setCPU={(cpu) => setCpus((prev) => [prev[0], cpu])} urlId="s" />
 				</section>
 				<hr className="h-1 w-2/5 border-gray-500" />
-				<section className="w-1/2">
-					<div className="mb-8 flex justify-center gap-6 text-white">
+				<section className="w-5/6 lg:w-1/2">
+					<div className="mb-8 flex justify-center gap-6 text-white ">
 						<div className="flex gap-2">
 							<div className="h-6 w-12 bg-green-500 rounded" /> Better
 						</div>

@@ -3,10 +3,11 @@ import type { CheerioAPI } from "cheerio";
 import { load } from "cheerio";
 import elementSelector from "../../../util/selectors";
 import type { CPU } from "../../../../types";
-// import { writeFile, } from "fs/promises";
+import { Redis } from "@upstash/redis";
 
 let $: CheerioAPI;
 
+const redis = Redis.fromEnv();
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 	const { model } = req.query;
 
@@ -15,11 +16,17 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 		return;
 	}
 
-	// TODO: Cache the token
-	const token = await refreshToken();
+	let cpu: CPU | null = await redis.get(`intel-${model}`);
+
+	if (cpu !== null) {
+		res.json(cpu);
+		return;
+	}
+
+	const token = await redis.get("intel-token") ?? await refreshToken();
 
 	// Get the url
-	const query = await fetch("https://platform.cloud.coveo.com/rest/search/v2?f:@tabfilter=[Products]", {
+	let query = await fetch("https://platform.cloud.coveo.com/rest/search/v2?f:@tabfilter=[Products]", {
 		method: "POST",
 		headers: {
 			"Content-Type": "application/json",
@@ -30,6 +37,20 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 			numberOfResults: 1
 		})
 	});
+
+
+	if (query.status === 419) {
+		const token = await refreshToken();
+		query = await fetch("https://platform.cloud.coveo.com/rest/search/v2?f:@tabfilter=[Products]", {
+			headers: {
+				Authorization: token
+			},
+			body: JSON.stringify({
+				q: model,
+				numberOfResults: 1
+			})
+		});
+	}
 
 	if (!query.ok) {
 		console.error(await query.text());
@@ -50,16 +71,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 	}
 
 	// Get the data
-	let page = await fetch(url);
-
-	if (page.status === 419) {
-		const token = await refreshToken();
-		page = await fetch(url, {
-			headers: {
-				Authorization: token
-			}
-		});
-	}
+	const page = await fetch(url);
 
 	if (!page.ok) {
 		console.error(await page.text());
@@ -71,7 +83,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
 	const cpuName = getParameter("Processor Number");
 
-	const cpu: CPU = {
+	cpu = {
 		name: cpuName,
 		manufacturer: "intel",
 		lithography: getParameter("Lithography"),
@@ -103,6 +115,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 		source: url
 	};
 
+	await redis.set(`intel-${model}`, cpu);
 	res.status(200).json(cpu);
 };
 
@@ -111,6 +124,7 @@ const getParameter = (name: string) => elementSelector($, ".tech-label span", na
 	.parent()
 	.find(".tech-data span")
 	.text() ?? null;
+
 const getFloatParameter = (name: string) => {
 	const param = getParameter(name)?.split(" ");
 
@@ -142,6 +156,7 @@ const refreshToken = async () => {
 	}
 
 	const data = await token.json();
+	await redis.set("intel-token", data.token);
 	return data.token;
 };
 

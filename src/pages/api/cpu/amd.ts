@@ -4,10 +4,11 @@ import { load } from "cheerio";
 import axios from "axios";
 import type { CPU } from "../../../../types";
 import elementSelector from "../../../util/selectors";
-import { prefixes } from "next/dist/build/output/log";
-import { parent } from "cheerio/lib/api/traversing";
+import { Redis } from "@upstash/redis";
 
 let $: CheerioAPI;
+
+const redis = Redis.fromEnv()
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 	let { model } = req.query;
@@ -23,11 +24,26 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 	// Get the url
 	//const query =  await fetch("https://www.amd.com/en/products-rest?_format=json")
 	// For some dumb reason, this endpoint doesn't work with fetch...
-	const query = await axios.get("https://www.amd.com/en/products-rest?_format=json", { timeout: 10000 });
+	let query;
+
+	try {
+		query = await axios.get("https://www.amd.com/en/products-rest?_format=json", { timeout: 10000 });
+	} catch (e) {
+		console.error(e);
+		res.status(500).send("Failed to fetch AMD products! (Timed out)");
+		return;
+	}
 
 	if (query.status !== 200) {
 		console.error(query.statusText);
-		res.status(500).end();
+		res.status(500).send("Failed to fetch AMD products");
+		return;
+	}
+
+	let cpu: CPU | null = await redis.get(model);
+
+	if (cpu !== null) {
+		res.json(cpu);
 		return;
 	}
 
@@ -56,7 +72,6 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 		scriptingEnabled: true
 	});
 
-
 	const specsLink = $(".full_specs_link a").attr("href");
 
 	if (!specsLink) {
@@ -77,7 +92,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
 	$ = load(specsPage.data);
 
-	const cpu: CPU = {
+	cpu = {
 		name: $(".section-title").text().trim(),
 		manufacturer: "amd",
 		cores: {
@@ -106,6 +121,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 		source: `https://www.amd.com${specsLink}`
 	};
 
+	await redis.set(model, JSON.stringify(cpu));
 	res.status(200).json(cpu);
 };
 
@@ -116,9 +132,9 @@ const getFloatParameter = (name: string) => {
 	const item = elementSelector($, ".field__label", name)?.parent().find(".field__item");
 	if (!item) return null;
 
-	const value =  parseFloat(item.text().trim());
+	const value = parseFloat(item.text().trim());
 
-	if(!value) return parseFloat(item.attr("content") ?? "") * 1e6;
+	if (!value) return parseFloat(item.attr("content") ?? "") * 1e6;
 
 	// Regex for catching the first letter after the numbers
 	const regex = /(?<=\d)([a-zA-Z])/g;
