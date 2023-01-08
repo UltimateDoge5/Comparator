@@ -5,10 +5,11 @@ import axios from "axios";
 import type { CPU } from "../../../../types";
 import elementSelector from "../../../util/selectors";
 import { Redis } from "@upstash/redis";
+import AMD_PRODUCTS from "../../../util/products";
 
 let $: CheerioAPI;
 
-const redis = Redis.fromEnv()
+const redis = Redis.fromEnv();
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 	let { model } = req.query;
@@ -21,25 +22,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 	model = model.replace(/ /g, "-").toLowerCase();
 	if (!model.startsWith("amd-")) model = `amd-${model}`;
 
-	// Get the url
-	//const query =  await fetch("https://www.amd.com/en/products-rest?_format=json")
-	// For some dumb reason, this endpoint doesn't work with fetch...
-	let query;
-
-	try {
-		query = await axios.get("https://www.amd.com/en/products-rest?_format=json", { timeout: 10000 });
-	} catch (e) {
-		console.error(e);
-		res.status(500).send("Failed to fetch AMD products! (Timed out)");
-		return;
-	}
-
-	if (query.status !== 200) {
-		console.error(query.statusText);
-		res.status(500).send("Failed to fetch AMD products");
-		return;
-	}
-
+	// Get the cpu from redis
 	let cpu: CPU | null = await redis.get(model);
 
 	if (cpu !== null) {
@@ -47,12 +30,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 		return;
 	}
 
-	const list = query.data as { term_id: string; url: string }[];
-
-	const url = list.find((item) => {
-		const itemModel = item.url.split("/").pop();
-		return itemModel === model;
-	})?.url;
+	const url = AMD_PRODUCTS.find((item) => item.split("/").pop() === model);
 
 	if (!url) {
 		res.status(404).send("CPU not found");
@@ -68,9 +46,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 		return;
 	}
 
-	$ = load(productPage.data, {
-		scriptingEnabled: true
-	});
+	$ = load(productPage.data);
 
 	const specsLink = $(".full_specs_link a").attr("href");
 
@@ -81,7 +57,6 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
 	//Get the specs page
 	const specsPage = await axios.get(`https://www.amd.com${specsLink}`);
-
 	// console.log("Fetching page: ", `https://www.amd.com${specsLink}`);
 
 	if (specsPage.status !== 200) {
