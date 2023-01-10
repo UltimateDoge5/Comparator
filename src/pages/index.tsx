@@ -39,6 +39,7 @@ export default function Index() {
 						</div>
 					</div>
 					<Transition
+						appear={true}
 						show={cpus[0] != null && cpus[1] != null}
 						enter="transition-opacity duration-75"
 						enterFrom="opacity-0"

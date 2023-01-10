@@ -15,6 +15,7 @@ export interface CPU {
 	pcie: string | null;
 	"64bit": boolean;
 	source: string;
+	schemaVer: number;
 }
 
 interface Cores {

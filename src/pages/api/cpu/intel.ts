@@ -4,10 +4,14 @@ import { load } from "cheerio";
 import elementSelector from "../../../util/selectors";
 import type { CPU } from "../../../../types";
 import { Redis } from "@upstash/redis";
+import * as https from "https";
 
 let $: CheerioAPI;
 
-const redis = Redis.fromEnv();
+const redis = Redis.fromEnv({
+	agent: new https.Agent({ keepAlive: true })
+});
+
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 	const { model } = req.query;
 
@@ -16,7 +20,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 		return;
 	}
 
-	let cpu: CPU | null = await redis.get(`intel-${model}`);
+	let cpu: CPU | null = req.query["no-cache"] === undefined ? await redis.get(`intel-${model}`) : null;
 
 	if (cpu !== null) {
 		res.json(cpu);
@@ -42,6 +46,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 	if (query.status === 419) {
 		const token = await refreshToken();
 		query = await fetch("https://platform.cloud.coveo.com/rest/search/v2?f:@tabfilter=[Products]", {
+			method: "POST",
 			headers: {
 				Authorization: token
 			},
@@ -81,7 +86,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
 	$ = load(await page.text());
 
-	const cpuName = getParameter("Processor Number");
+	let cpuName = getParameter("Processor Number");
+	if (!cpuName?.startsWith("Intel")) cpuName = "Intel " + cpuName;
 
 	cpu = {
 		name: cpuName,
@@ -112,7 +118,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 			},
 		pcie: getParameter("PCI Express Revision"),
 		"64bit": getParameter("Instruction Set") === "Yes",
-		source: url
+		source: url,
+		schemaVer: 1
 	};
 
 	await redis.set(`intel-${model}`, cpu);
@@ -147,7 +154,7 @@ const getFloatParameter = (name: string) => {
 	return isNaN(floatValue) ? null : floatValue;
 };
 
-const refreshToken = async () => {
+export const refreshToken = async () => {
 	const token = await fetch("https://www.intel.pl/libs/intel/services/replatform?searchHub=entepriseSearch");
 
 	if (!token.ok) {

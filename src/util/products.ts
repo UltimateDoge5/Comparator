@@ -3,7 +3,7 @@
  * The endpoint itself behaves weirdly, and is not consistent, hence this file.
  * Source: {@link https://www.amd.com/en/products-rest?_format=json}
  */
-const AMD_PRODUCTS = [
+export const AMD_PRODUCTS = [
 	"/en/products/cpu/255e",
 	"/en/products/cpu/425e",
 	"/en/products/cpu/460",
@@ -621,6 +621,6 @@ const AMD_PRODUCTS = [
 	"/en/products/apu/amd-ryzen-9-7845hx",
 	"/en/products/apu/amd-ryzen-9-7940hs",
 	"/en/products/apu/amd-ryzen-7-7736u"
-] as const;
+];
 
-export default AMD_PRODUCTS;
+export const INTEL_PRODUCTS = [];

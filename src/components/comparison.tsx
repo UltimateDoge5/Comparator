@@ -4,12 +4,12 @@ import type { CPU } from "../../types";
 const Comparison = ({ cpus }: { cpus: [CPU, CPU] }) => {
 	return (
 		<div className="relative overflow-x-auto shadow-md sm:rounded-t-md">
-			<table className="w-full text-left text-2xl text-slate-500 dark:text-gray-300 [&_td,&_th]:px-4 [&_td,&_th]:py-2">
+			<table className="w-full table-fixed text-left text-2xl text-slate-500 dark:text-gray-300 [&_td,&_th]:px-4 [&_td,&_th]:py-2">
 				<thead className="bg-gray-50 text-xl uppercase text-gray-700 dark:bg-gray-700 dark:text-gray-300">
 					<tr className="border-b border-black">
 						<th className="p-2 text-left">Feature</th>
-						<th className="p-2 text-left">{`${cpus[0].manufacturer === "amd" ? "" : "Intel"} ${cpus[0].name}`}</th>
-						<th className="p-2 text-left">{`${cpus[1].manufacturer === "amd" ? "" : "Intel"} ${cpus[1].name}`}</th>
+						<th className="p-2 text-left underline"><a href={cpus[0].source}>{cpus[0].name}</a></th>
+						<th className="p-2 text-left underline"><a href={cpus[1].source}>{cpus[1].name}</a></th>
 					</tr>
 				</thead>
 				<tbody className="[&>tr]:border-b [&>tr]:bg-white/20">

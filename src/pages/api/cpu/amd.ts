@@ -5,11 +5,14 @@ import axios from "axios";
 import type { CPU } from "../../../../types";
 import elementSelector from "../../../util/selectors";
 import { Redis } from "@upstash/redis";
-import AMD_PRODUCTS from "../../../util/products";
+import { AMD_PRODUCTS } from "../../../util/products";
+import https from "https";
 
 let $: CheerioAPI;
 
-const redis = Redis.fromEnv();
+const redis = Redis.fromEnv({
+	agent: new https.Agent({ keepAlive: true })
+});
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 	let { model } = req.query;
@@ -19,11 +22,12 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 		return;
 	}
 
-	model = model.replace(/ /g, "-").toLowerCase();
+	model = model.trim().replace(/ /g, "-").toLowerCase();
 	if (!model.startsWith("amd-")) model = `amd-${model}`;
 
+	console.log(model);
 	// Get the cpu from redis
-	let cpu: CPU | null = await redis.get(model);
+	let cpu: CPU | null = req.query["no-cache"] === undefined ? await redis.get(model) : null;
 
 	if (cpu !== null) {
 		res.json(cpu);
@@ -93,7 +97,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 		} : false,
 		"64bit": getParameter("64-bit Support") === "Yes",
 		pcie: getParameter("PCI Express Revision"),
-		source: `https://www.amd.com${specsLink}`
+		source: `https://www.amd.com${specsLink}`,
+		schemaVer: 1
 	};
 
 	await redis.set(model, JSON.stringify(cpu));
