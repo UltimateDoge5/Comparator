@@ -152,7 +152,6 @@ const getLaunchDate = (string: string) => {
 const getMemoryDetails = (): Memory["types"] => {
 	const memory = getParameter("System Memory Type");
 	if (!memory) return [];
-console.log(memory);
 
 	// Example:
 	// DDR4 - Up to 3200MHz
@@ -172,11 +171,12 @@ console.log(memory);
 	// Example:
 	// System Memory Type: DDR4
 	// System Memory Specification: Up to 2667MHz
-	if (/\d{2}/g.test(memory)) {
+	const speed = getFloatParameter("System Memory Specification", false);
+	if (speed) {
 		return [
 			{
 				type: memory,
-				speed: getFloatParameter("System Memory Specification", false) as number
+				speed: speed
 			}
 		];
 	}

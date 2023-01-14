@@ -77,7 +77,7 @@ const Selector = ({ setCPU, urlId }: SelectorProps) => {
 		}
 	}, [selection.model]);
 
-	// Manage the search results
+	// Manage the search tip results
 	useEffect(() => {
 		if (selection.state !== "loading" && tempModel.length > 3) {
 			// Cancel the previous search
@@ -113,7 +113,7 @@ const Selector = ({ setCPU, urlId }: SelectorProps) => {
 				<input
 					value={tempModel}
 					disabled={selection.state === "loading"}
-					onFocus={() => setShowResults(true)}
+					onFocus={() => omittedSearch.length > 0 && setShowResults(true)}
 					onBlur={() => setShowResults(false)}
 					onChange={(e) => setTempModel(e.target.value.trimStart())}
 					placeholder={selection.manufacturer === "intel" ? "i5-7400" : "Ryzen 7 5800H"}
@@ -163,7 +163,7 @@ const Selector = ({ setCPU, urlId }: SelectorProps) => {
 			>
 				<div
 					style={{ width: countdownBarPercent + "%" }}
-					className={`absolute ${searchTipVisible ? "top-0 rounded-t" : "bottom-0 rounded-b"} left-0 z-0 h-0.5 bg-blue-400`}
+					className={`absolute ${searchTipVisible ? "top-0" : "bottom-0"} rounded-full left-[2px] -z-10 h-0.5 bg-blue-400`}
 				></div>
 			</Transition>
 		</div>

@@ -120,7 +120,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 		          : {
 				baseFrequency: getFloatParameter("Graphics Base Frequency"),
 				maxFrequency: getFloatParameter("Graphics Max Dynamic Frequency"),
-				displays: getFloatParameter("Max # of Displays Supported")
+				displays: getFloatParameter("Max # of Displays Supported") ?? getFloatParameter("# of Displays Supported")
 			},
 		pcie: getParameter("PCI Express Revision"),
 		source: url,
@@ -171,7 +171,7 @@ const getMemoryDetails = (): Memory["types"] => {
 			if (!mem) return null;
 			const [type, speed] = mem.trim().split(" ");
 
-			return { type: type, speed: parseInt(speed) * 1e6 };
+			return { type: type, speed: parseInt(speed)};
 		}).filter((mem) => mem !== null);
 	}
 

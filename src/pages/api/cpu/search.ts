@@ -27,7 +27,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 			.map((p) =>
 				p?.replace(/-/g, " ")
 					.replace("amd", "")
-					.replace("r", "R"));
+					.replace("r", "R")
+					.trim())
 
 		res.json(results);
 		return;
