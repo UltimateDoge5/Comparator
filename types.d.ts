@@ -13,7 +13,6 @@ export interface CPU {
 	memory: Memory;
 	graphics: false | Graphics;
 	pcie: string | null;
-	"64bit": boolean;
 	source: string;
 	schemaVer: number;
 }
@@ -25,7 +24,10 @@ interface Cores {
 }
 
 interface Memory {
-	type: string | null;
+	types: ({
+		speed: number;
+		type: string;
+	} | null)[]
 	maxSize: number | null;
 }
 

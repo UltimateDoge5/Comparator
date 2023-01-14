@@ -1,10 +1,15 @@
 import type { CPU, Manufacturer } from "../../types";
-import { Fragment, useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useReducer, useRef, useState } from "react";
 import { Transition } from "@headlessui/react";
 import fetchCPU from "../util/fetchCPU";
 
 const Selector = ({ setCPU, urlId }: SelectorProps) => {
-	const [selection, setSelection] = useState<Selection>({ manufacturer: "intel", model: "", state: "idle" });
+	const [selection, setSelection] = useReducer((prev: Selection, next: Partial<Selection>) => ({ ...prev, ...next }), {
+		manufacturer: "intel",
+		model: "",
+		state: "idle"
+	});
+
 	const [tempModel, setTempModel] = useState("");
 	const [countdownBarPercent, setCountdownBarPercent] = useState(100);
 
@@ -30,7 +35,7 @@ const Selector = ({ setCPU, urlId }: SelectorProps) => {
 				if (percent <= 0) {
 					clearInterval(intervalRef.current);
 					// No need to await this
-					setSelection({ ...selection, model: tempModel, state: "loading" });
+					setSelection({ model: tempModel, state: "loading" });
 				}
 				setCountdownBarPercent(percent);
 			}, 17);
@@ -48,17 +53,16 @@ const Selector = ({ setCPU, urlId }: SelectorProps) => {
 			const [manufacturer, model] = param.split("-").map((s) => decodeURIComponent(s));
 			setTempModel(decodeURIComponent(model));
 			setSelection({ manufacturer: manufacturer as Manufacturer, model, state: "loading" });
-			// fetchWrapper(manufacturer.toLowerCase() as Manufacturer, model);
 		}
 	}, []);
 
 	// Fetch the CPU
 	useEffect(() => {
 		if (selection.model.length > 3) {
-			setSelection({ ...selection, state: "loading" });
+			setSelection({ state: "loading" });
 			fetchCPU(selection.manufacturer, selection.model).then((cpu) => {
 				if (cpu.error) {
-					setSelection({ ...selection, state: "error" });
+					setSelection({ state: "error" });
 					return;
 				}
 
@@ -67,7 +71,7 @@ const Selector = ({ setCPU, urlId }: SelectorProps) => {
 				url.searchParams.set(urlId, `${encodeURIComponent(selection.manufacturer)}-${encodeURIComponent(selection.model)}`);
 				window.history.pushState({}, "", url.toString());
 
-				setSelection({ ...selection, state: "success" });
+				setSelection({ state: "success" });
 				setCPU(cpu.data);
 			});
 		}
@@ -92,13 +96,13 @@ const Selector = ({ setCPU, urlId }: SelectorProps) => {
 	}, [selection, tempModel]);
 
 	return (
-		<div className={`flex items-center gap-4 rounded-md border transition-colors bg-opacity-10 p-4 relative ${getMarkings(selection.state)}`}>
+		<div className={`relative flex items-center gap-4 rounded-md border p-4 transition-colors ${getMarkings(selection.state)}`}>
 			<select
 				value={selection.manufacturer}
 				disabled={selection.state === "loading"}
-				className="rounded-md bg-gray-200 p-2 disabled:opacity-75 disabled:cursor-not-allowed"
+				className="rounded-md bg-gray-200 p-2 disabled:cursor-not-allowed disabled:opacity-75"
 				onChange={(e) => {
-					setSelection({ ...selection, model: "", manufacturer: e.target.value as Manufacturer });
+					setSelection({ model: "", manufacturer: e.target.value as Manufacturer });
 					setTempModel("");
 				}}
 			>
@@ -111,9 +115,9 @@ const Selector = ({ setCPU, urlId }: SelectorProps) => {
 					disabled={selection.state === "loading"}
 					onFocus={() => setShowResults(true)}
 					onBlur={() => setShowResults(false)}
-					onChange={(e) => setTempModel(e.target.value)}
-					placeholder={selection.manufacturer === "intel" ? "i5-5400" : "Ryzen 7 5800H"}
-					className="rounded-md bg-gray-200 p-2 disabled:opacity-75 disabled:cursor-not-allowed"
+					onChange={(e) => setTempModel(e.target.value.trimStart())}
+					placeholder={selection.manufacturer === "intel" ? "i5-7400" : "Ryzen 7 5800H"}
+					className="rounded-md bg-gray-200 p-2 disabled:cursor-not-allowed disabled:opacity-75"
 				/>
 
 				<Transition
@@ -128,12 +132,12 @@ const Selector = ({ setCPU, urlId }: SelectorProps) => {
 					leaveTo="opacity-0"
 				>
 					<div
-						className={`absolute flex divider-y top-full bg-white rounded-md shadow-md p-2 z-20 w-max transition-all ${previewPositions[omittedSearch.length - 1]}`}
+						className={`absolute top-full z-20 flex w-max rounded-lg bg-white p-2 shadow-md transition-all ${previewPositions[omittedSearch.length - 1]}`}
 					>
 						{omittedSearch.map((result) => (
 							<div
 								key={result}
-								className="p-2 rounded-md hover:bg-gray-300 focus:bg-gray-200 cursor-pointer"
+								className="cursor-pointer rounded-md p-2 hover:bg-gray-300 focus:bg-gray-200"
 								onClick={() => {
 									setTempModel(result);
 									setShowResults(false);
@@ -159,7 +163,7 @@ const Selector = ({ setCPU, urlId }: SelectorProps) => {
 			>
 				<div
 					style={{ width: countdownBarPercent + "%" }}
-					className={`absolute ${searchTipVisible ? "top-0 rounded-t" : "bottom-0 rounded-b"} left-0 h-0.5 bg-blue-400 z-0`}
+					className={`absolute ${searchTipVisible ? "top-0 rounded-t" : "bottom-0 rounded-b"} left-0 z-0 h-0.5 bg-blue-400`}
 				></div>
 			</Transition>
 		</div>
@@ -172,13 +176,13 @@ const previewPositions = ["", "-left-1/4", "-left-1/2"];
 const getMarkings = (state: Selection["state"]) => {
 	switch (state) {
 		case "loading":
-			return "bg-yellow-400 border-yellow-500 hover:border-yellow-400";
+			return "bg-yellow-400/10 border-yellow-500 hover:border-yellow-400";
 		case "error":
-			return "bg-red-400 border-red-500 hover:border-red-400";
+			return "bg-red-400/10 border-red-500 hover:border-red-400";
 		case "success":
-			return "bg-green-400 border-green-500 hover:border-green-400";
+			return "bg-green-400/10 border-green-500 hover:border-green-400";
 		default:
-			return "bg-white border-gray-500 hover:border-gray-400";
+			return "bg-white/10 border-gray-500 hover:border-gray-400";
 	}
 };
 

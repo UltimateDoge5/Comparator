@@ -61,7 +61,12 @@ const Comparison = ({ cpus }: { cpus: [CPU, CPU] }) => {
 							<td>Memory type</td>
 							{cpus.map((cpu) => (
 								<td key={cpu.name}>
-									{cpu.memory.type}
+									{cpu.memory.types.map((type) => (
+										<>
+											<span key={type?.type}>{type?.type} at {type?.speed} MHz</span>
+											<br />
+										</>
+									))}
 								</td>
 							))}
 						</tr>
@@ -102,11 +107,8 @@ const GraphicsComparison = ({ cpus }: { cpus: CPU[] }) => {
 		<>
 			<tr>
 				<td>Base clock</td>
-				{cpus.map((cpu) => cpu.graphics !== false ? (
-					<td key={cpu.name}>{formatNumber(cpu.graphics.baseFrequency, "Hz")}</td>
-				) : (
-					                   <td key={cpu.name} rowSpan={3}>No graphics included</td>
-				                   ))}
+				{cpus.map((cpu) => cpu.graphics !== false ? (<td key={cpu.name}>{formatNumber(cpu.graphics.baseFrequency, "Hz")}</td>) : (
+					<td key={cpu.name} rowSpan={3}>No graphics included</td>))}
 			</tr>
 			<tr>
 				<td>Boost clock</td>

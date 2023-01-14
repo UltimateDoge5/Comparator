@@ -4,7 +4,7 @@ export default function Document() {
 	return (
 		<Html lang="en">
             <Head />
-            <body className="bg-gradient min-h-screen">
+            <body className="min-h-screen bg-gradient [&>div]:min-h-screen">
                 <Main />
                 <NextScript />
             </body>

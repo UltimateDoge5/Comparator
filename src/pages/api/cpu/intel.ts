@@ -5,6 +5,7 @@ import elementSelector from "../../../util/selectors";
 import type { CPU } from "../../../../types";
 import { Redis } from "@upstash/redis";
 import * as https from "https";
+import type { Memory } from "../../../../types";
 
 let $: CheerioAPI;
 
@@ -22,7 +23,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
 	let cpu: CPU | null = req.query["no-cache"] === undefined ? await redis.get(`intel-${model}`) : null;
 
-	if (cpu !== null) {
+	if (cpu !== null && cpu.schemaVer >= parseFloat(process.env.MIN_SCHEMA_VERSION || "1.1")) {
 		res.json(cpu);
 		return;
 	}
@@ -65,8 +66,13 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
 	const data = await query.json();
 
-	let url = data.results[0].uri;
+	let url = data?.results[0]?.uri;
 	// console.log("Fetching page: ", url);
+
+	if (!url) {
+		res.status(404).send("CPU not found");
+		return;
+	}
 
 	// Sometimes the url path is good, but the last part is wrong
 	if (!url.includes("specifications")) {
@@ -79,7 +85,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 	const page = await fetch(url);
 
 	if (!page.ok) {
-		console.error(await page.text());
+		console.error(page.statusText, url, model);
 		res.status(500).send("Error while fetching the CPU data");
 		return;
 	}
@@ -106,7 +112,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 		tdp: getFloatParameter("TDP") || getFloatParameter("Maximum Turbo Power"),
 		launchDate: getParameter("Launch Date") as string,
 		memory: {
-			type: getParameter("Memory Types"),
+			types: getMemoryDetails(),
 			maxSize: getFloatParameter("Max Memory Size")
 		},
 		graphics: cpuName?.includes("F")
@@ -117,12 +123,11 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 				displays: getFloatParameter("Max # of Displays Supported")
 			},
 		pcie: getParameter("PCI Express Revision"),
-		"64bit": getParameter("Instruction Set") === "Yes",
 		source: url,
-		schemaVer: 1
+		schemaVer: 1.1
 	};
 
-	await redis.set(`intel-${model}`, cpu);
+	if (process.env.NODE_ENV === "production" || req.query["no-cache"] !== undefined) await redis.set(`intel-${model}`, cpu);
 	res.status(200).json(cpu);
 };
 
@@ -152,6 +157,30 @@ const getFloatParameter = (name: string) => {
 
 	const floatValue = parseFloat(param?.[0] ?? "") * multiplier;
 	return isNaN(floatValue) ? null : floatValue;
+};
+
+const getMemoryDetails = (): Memory["types"] => {
+	const memory = getParameter("Memory Types");
+	if (!memory) return [];
+
+	// Example:
+	// Up to DDR5 4800 MT/s
+	// Up to DDR4 3200 MT/s
+	if (memory.includes("Up to")) {
+		return memory.replaceAll("Up to", "").split("MT/s").map((mem) => {
+			if (!mem) return null;
+			const [type, speed] = mem.trim().split(" ");
+
+			return { type: type, speed: parseInt(speed) * 1e6 };
+		}).filter((mem) => mem !== null);
+	}
+
+	// DDR4-2133/2400, DDR3L-1333/1600
+	return memory.split(",").map((mem) => {
+		const [type, speed] = mem.trim().split("-");
+
+		return { type: type, speed: parseInt(speed.split("/").pop() as string)};
+	});
 };
 
 export const refreshToken = async () => {

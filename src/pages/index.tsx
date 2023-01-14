@@ -15,32 +15,36 @@ export default function Index() {
 				<title>Compare any CPU you want</title>
 				<meta name="description" content="Comparator lets you compare CPUs and GPUs in an instant!" />
 				<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+				<link rel="canonical" href={`https://${process.env.NEXT_PUBLIC_VERCEL_URL}`} />
 			</Head>
 
-			<main className="flex flex-col items-center gap-4 pt-12">
-				<h1 className="text-6xl font-semibold text-white">Compare CPUs</h1>
-				<h2 className="mb-4 text-2xl text-white">Search for a CPU and compare it to another one</h2>
+			{/*<h1 className="uppercase absolute top-2 left-2 text-2xl text-white font-bold italic">Comparator</h1>*/}
 
-				<section className="grid grid-cols-2 gap-8 p-2">
+			<main className="flex min-h-[90vh] flex-col items-center gap-4 pt-12">
+				<h1 className="text-center text-6xl font-semibold text-white">Compare CPUs</h1>
+				<h2 className="mb-4 px-2 text-center text-2xl text-white">Search for a CPU and compare it to another one</h2>
+
+				<section className="grid grid-cols-1 gap-8 p-2 md:grid-cols-2">
 					<Selector setCPU={(cpu) => setCpus((prev) => [cpu, prev[1]])} urlId="f" />
 					<Selector setCPU={(cpu) => setCpus((prev) => [prev[0], cpu])} urlId="s" />
 				</section>
 				<hr className="h-1 w-2/5 border-gray-500" />
-				<section className="w-5/6 lg:w-1/2">
-					<div className="mb-8 flex justify-center gap-6 text-white ">
+				<section className="mb-12 w-5/6 lg:w-1/2">
+					<div className="mb-8 hidden justify-center gap-6 text-white md:flex">
 						<div className="flex gap-2">
-							<div className="h-6 w-12 bg-green-500 rounded" /> Better
+							<div className="h-6 w-12 rounded bg-green-500" /> Better
 						</div>
 						<div className="flex gap-2">
-							<div className="h-6 w-12 bg-red-500 rounded" /> Worse
+							<div className="h-6 w-12 rounded bg-red-500" /> Worse
 						</div>
 						<div className="flex gap-2">
-							<div className="h-6 w-12 bg-yellow-500 rounded" /> Unable to compare
+							<div className="h-6 w-12 rounded bg-yellow-500" /> Unable to compare
 						</div>
 					</div>
 					<Transition
 						appear={true}
-						show={cpus[0] != null && cpus[1] != null}
+						show={true}
 						enter="transition-opacity duration-75"
 						enterFrom="opacity-0"
 						enterTo="opacity-100"
@@ -48,10 +52,21 @@ export default function Index() {
 						leaveFrom="opacity-100"
 						leaveTo="opacity-0"
 					>
-						<Comparison cpus={cpus as [CPU, CPU]} />
+						{cpus[0] != null && cpus[1] != null ? <Comparison cpus={cpus as [CPU, CPU]} /> :
+						 <h3 className="text-center text-xl text-white ">Select two CPUs to compare them</h3>}
 					</Transition>
 				</section>
 			</main>
+			<footer className="flex h-[10vh] w-full flex-col items-center gap-x-4 gap-y-2 border-t bg-slate-700/25 py-4 text-center md:flex-row md:justify-center">
+				<p className="text-white">Made by
+					{/* eslint-disable-next-line react/jsx-no-target-blank */}
+					<a className="text-blue-500" href="https://pkozak.org" target="_blank"> Piotr Kozak</a>
+				</p>
+
+				<p className="text-white">Source code available on
+					<a className="text-blue-500" href="https://github.com/UltimateDoge5/Comparator" target="_blank" rel="noreferrer"> GitHub </a>
+				</p>
+			</footer>
 		</>
 	);
 }
