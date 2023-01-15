@@ -126,7 +126,7 @@ const getFloatParameter = (name: string, normalize = true) => {
 
 	// Regex for catching the first letter after the numbers
 	const regex = /(?<=\d)([a-zA-Z])/g;
-	const prefix = item.text().replaceAll(" ","").match(regex)?.[0] || "base";
+	const prefix = item.text().replaceAll(" ", "").match(regex)?.[0] || "base";
 
 	return value * (Prefixes?.[prefix as keyof typeof Prefixes] ?? 1);
 };
@@ -181,15 +181,22 @@ const getMemoryDetails = (): Memory["types"] => {
 		];
 	}
 
-	const speeds = elementSelector($, ".field__label", "Max Memory Speed")?.parent().find(".key__values .field .value").text().trim()
+	const speeds = elementSelector($, ".field__label", "Max Memory Speed")?.parent().find(".key__values").text().trim();
 	if (!speeds) return [];
+
+	let maxSpeed = 0;
+
+	speeds.match(/DDR\d-(\d{4})/gm)?.forEach((match) => {
+		const speed = parseInt(match.split("-")?.pop() ?? "");
+		if (speed > maxSpeed) maxSpeed = speed;
+	});
 
 	return [
 		{
 			type: memory,
-			speed: parseInt(speeds.split("-").pop() as string)
+			speed: maxSpeed
 		}
-	]
+	];
 };
 
 export default handler;
