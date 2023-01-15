@@ -1,6 +1,7 @@
-import type { CPU } from "../../types";
+import type { CPU, Graphics } from "../../CPU";
 import { Fragment } from "react";
 import { domAnimation, LazyMotion, m } from "framer-motion";
+import { colorDiff, formatNumber } from "../util/formatting";
 
 // Compare two CPUs
 const Comparison = ({ cpus }: { cpus: [CPU, CPU] }) => {
@@ -54,21 +55,17 @@ const RenderComparison = (cpus: [CPU, CPU], list: FeatureList, ...keys: string[]
 				);
 			case "number": {
 				const [a, b] = [cpu1[key] as number, cpu2[key] as number];
-				const indexToColor = a > b ? 0 : b > a ? 1 : -1;
+
 				return (
 					<tr key={feature.title}>
 						<td>{feature.title}</td>
 						<td>
-							<span
-								className={indexToColor === -1 ? "text-gray-300" : indexToColor === 0 ? "text-green-500" : "text-red-400"}
-							>
+							<span className={colorDiff(a, b)}>
 								{formatNumber(a, feature.unit || "")}
 							</span>
 						</td>
 						<td>
-							<span
-								className={indexToColor === -1 ? "text-gray-300" : indexToColor === 1 ? "text-green-500" : "text-red-400"}
-							>
+							<span className={colorDiff(b, a)}>
 								{formatNumber(b, feature.unit || "")}
 							</span>
 						</td>
@@ -85,16 +82,22 @@ const FeatureNames: FeatureList = {
 		parse: (cpus) => (
 			<tr key="cores">
 				<td className="p-2">Cores</td>
-				{cpus.map((cpu) => (
+				{cpus.map((cpu, i) => (
 					<td className="p-2" key={cpu.name}>
+						<span className={colorDiff(cpu.cores.total, cpus[1 - i].cores.total)}>
 						{cpu.cores.performance !== null && cpu.cores.efficient !== null ? (
 							<>{cpu.cores.performance} / {cpu.cores.efficient}</>
 						) : (cpu.cores.total)
 						}
+						</span>
 					</td>
 				))}
 			</tr>
 		)
+	},
+	threads: {
+		title: "Threads",
+		type: "number"
 	},
 	baseFrequency: {
 		title: "Base Frequency",
@@ -140,16 +143,6 @@ const FeatureNames: FeatureList = {
 					</tr>
 					<tr>
 						<td className="p-2">Memory Types</td>
-						{/*{cpus.map((cpu) => (*/}
-						{/*	<td className="p-2" key={cpu.name}>*/}
-						{/*		{cpu.memory.types.map((type) => (*/}
-						{/*			<Fragment key={type?.type}>*/}
-						{/*				<span>{type?.type} at {type?.speed} MHz</span>*/}
-						{/*				<br />*/}
-						{/*			</Fragment>*/}
-						{/*		))}*/}
-						{/*	</td>*/}
-						{/*))}*/}
 						<MemoryComparison cpus={cpus} />
 					</tr>
 				</>
@@ -190,22 +183,22 @@ type Feature = { title: string } & (
 
 
 const MemoryComparison = ({ cpus }: { cpus: CPU[] }) => {
-	// compare memory speeds for matching types
 	const matchingTypes = cpus[0].memory.types.filter((type) => cpus[1].memory.types.some((type2) => type2?.type === type?.type))
 		.map((type) => type?.type);
+
 	const memorySpeeds = matchingTypes.map((type) => {
 		const a = cpus[0].memory.types.find((type2) => type2?.type === type)?.speed as number;
 		const b = cpus[1].memory.types.find((type2) => type2?.type === type)?.speed as number;
-		return { type, a, b, indexToColor: a > b ? 0 : b > a ? 1 : -1 };
+		return { type, a, b };
 	});
 
 	return (
 		<>
-			{cpus.map((cpu,i) => (
+			{cpus.map((cpu, i) => (
 				<td className="p-2" key={cpu.name}>
-					{memorySpeeds.map(({ type, a, b, indexToColor }) => (
+					{memorySpeeds.map(({ type, a, b }) => (
 						<Fragment key={type}>
-							<span className={indexToColor === i ? "text-green-500" : "text-red-400"}>
+							<span className={i % 2 ? colorDiff(b, a) : colorDiff(a, b)}>
 								{type} at {cpu.name === cpus[0].name ? a : b} MHz
 							</span>
 							 <br />
@@ -226,8 +219,8 @@ const MemoryComparison = ({ cpus }: { cpus: CPU[] }) => {
 const GraphicsComparison = ({ cpus }: { cpus: CPU[] }) => {
 	if (cpus.filter((cpu) => cpu.graphics).length === 0) {
 		return (
-			<tr key="no-graphics">
-			<td colSpan={3}>No graphics</td>
+			<tr>
+				<td colSpan={3}>No graphics</td>
 			</tr>
 		);
 	}
@@ -235,47 +228,44 @@ const GraphicsComparison = ({ cpus }: { cpus: CPU[] }) => {
 	return (
 		<>
 			<tr>
-			<td>Base clock</td>
-				{cpus.map((cpu) =>
-						cpu.graphics !== false ? (
-							<td key={cpu.name}>{formatNumber(cpu.graphics.baseFrequency, "Hz")}</td>
-						) : (
-							<td key={cpu.name} rowSpan={3}>
-			No graphics included
-			</td>
-						)
+				<td>Base clock</td>
+				{cpus.map((cpu, i) =>
+					cpu.graphics !== false ? (
+						<td
+							key={cpu.name}
+							className={colorDiff((cpus[0].graphics as Graphics).baseFrequency, (cpus[1].graphics as Graphics).baseFrequency, i === 0)}
+						>
+								{formatNumber(cpu.graphics.baseFrequency, "Hz")}
+							</td>
+					) : (
+						<td key={cpu.name} rowSpan={3}>
+								No graphics included
+							</td>
+					)
 				)}
-			</tr>
-			<tr>
-			<td>Boost clock</td>
-				{cpus.map(
-					(cpu) =>
-						cpu.graphics !== false && (
-							<td key={cpu.name}>{formatNumber(cpu.graphics.maxFrequency, "Hz")}</td>
-						)
-				)}
-			</tr>
-			<tr>
-			<td>Max displays</td>
-				{cpus.map(
-					(cpu) => cpu.graphics !== false && <td key={cpu.name}>{cpu.graphics.displays || "Unknown"}</td>
-				)}
-			</tr>
+				</tr>
+				<tr>
+					<td>Boost clock</td>
+					{cpus.map(
+						(cpu, i) =>
+							cpu.graphics !== false && (
+								<td key={cpu.name} className={colorDiff((cpus[0].graphics as Graphics).maxFrequency, (cpus[1].graphics as Graphics).maxFrequency, i === 0)}>
+									{formatNumber(cpu.graphics.maxFrequency, "Hz")}
+								</td>
+							)
+					)}
+				</tr>
+				<tr>
+					<td>Max displays</td>
+					{cpus.map(
+						(cpu) => cpu.graphics !== false && <td key={cpu.name}>{cpu.graphics.displays || "Unknown"}</td>
+					)}
+				</tr>
 			</>
 	);
 };
 
-const formatNumber = (num: number | null, unit: string) => {
-	if (num === null) return "N/A " + unit;
-
-	const prefixes = ["", "K", "M", "G", "T"];
-	const prefix = prefixes[Math.floor(Math.log10(num) / 3)];
-	const value = num / Math.pow(10, prefixes.indexOf(prefix) * 3);
-	return `${value % 1 !== 0 ? value.toFixed(2) : value} ${prefix}${unit}`;
-};
-
-const traverse = (obj: Record<string
-	, any>, ...keys: string[]) => {
+const traverse = (obj: Record<string, any>, ...keys: string[]) => {
 	let current = obj;
 	for (const key of keys) {
 		current = current[key];

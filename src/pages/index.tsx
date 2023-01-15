@@ -1,6 +1,6 @@
 import Head from "next/head";
 import { useEffect, useState } from "react";
-import type { CPU } from "../../types";
+import type { CPU } from "../../CPU";
 import Comparison from "../components/comparison";
 
 import Selector from "../components/selector";

@@ -1,4 +1,4 @@
-import type { CPU, Manufacturer } from "../../types";
+import type { CPU, Manufacturer } from "../../CPU";
 
 const fetchCPU = async (manufacturer: Manufacturer, model: string) => new Promise<Result>(async (resolve) => {
 	const response = await fetch(`/api/cpu/${manufacturer.toLowerCase()}?model=${model}`);

@@ -1,4 +1,4 @@
-import type { CPU, Manufacturer } from "../../types";
+import type { CPU, Manufacturer } from "../../CPU";
 import { Fragment, useEffect, useReducer, useRef, useState } from "react";
 import { Transition } from "@headlessui/react";
 import fetchCPU from "../util/fetchCPU";

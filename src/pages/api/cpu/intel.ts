@@ -2,10 +2,10 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import type { CheerioAPI } from "cheerio";
 import { load } from "cheerio";
 import elementSelector from "../../../util/selectors";
-import type { CPU } from "../../../../types";
+import type { CPU } from "../../../../CPU";
 import { Redis } from "@upstash/redis";
 import * as https from "https";
-import type { Memory } from "../../../../types";
+import type { Memory } from "../../../../CPU";
 
 let $: CheerioAPI;
 

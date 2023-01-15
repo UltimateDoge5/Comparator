@@ -31,7 +31,7 @@ interface Memory {
 	maxSize: number | null;
 }
 
-interface Graphics {
+export interface Graphics {
 	baseFrequency: number | null;
 	maxFrequency: number | null;
 	displays: number | null;

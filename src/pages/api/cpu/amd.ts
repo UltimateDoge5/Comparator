@@ -2,7 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import type { CheerioAPI } from "cheerio";
 import { load } from "cheerio";
 import axios from "axios";
-import type { CPU, Memory } from "../../../../types";
+import type { CPU, Memory } from "../../../../CPU";
 import elementSelector from "../../../util/selectors";
 import { Redis } from "@upstash/redis";
 import { AMD_PRODUCTS } from "../../../util/products";
