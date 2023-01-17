@@ -21,7 +21,7 @@ const Selector = ({ setCPU, urlId }: SelectorProps) => {
 	const barVisible = tempModel !== selection.model && tempModel.length > 3 && selection.state !== "loading";
 
 	const omittedSearch = searchResults.filter((r) => r !== tempModel);
-	const searchTipVisible = showResults && searchResults.length > 0;
+	const searchTipVisible = showResults && searchResults.length > 0 && tempModel.length > 3;
 
 
 	// Handle the countdown bar
@@ -50,8 +50,8 @@ const Selector = ({ setCPU, urlId }: SelectorProps) => {
 		const param = url.searchParams.get(urlId);
 
 		if (param) {
-			const [manufacturer, model] = param.split("-").map((s) => decodeURIComponent(s));
-			setTempModel(decodeURIComponent(model));
+			const [manufacturer, model] = splitFirst(param, "-").map((s) => decodeURI(s));
+			setTempModel(decodeURI(model));
 			setSelection({ manufacturer: manufacturer as Manufacturer, model, state: "loading" });
 		}
 	}, []);
@@ -68,7 +68,7 @@ const Selector = ({ setCPU, urlId }: SelectorProps) => {
 
 				// Update the URL after successful fetch
 				const url = new URL(window.location.href);
-				url.searchParams.set(urlId, `${encodeURIComponent(selection.manufacturer)}-${encodeURIComponent(selection.model)}`);
+				url.searchParams.set(urlId, `${encodeURI(selection.manufacturer)}-${encodeURI(selection.model)}`);
 				window.history.pushState({}, "", url.toString());
 
 				setSelection({ state: "success" });
@@ -113,17 +113,24 @@ const Selector = ({ setCPU, urlId }: SelectorProps) => {
 				<input
 					value={tempModel}
 					disabled={selection.state === "loading"}
-					onFocus={() => omittedSearch.length > 0 && setShowResults(true)}
+					onFocus={() => (omittedSearch.length > 0) && setShowResults(true)}
+					onKeyDown={(e) => {
+						if (tempModel !== selection.model && !showResults) setShowResults(true);
+
+						if (e.key === "Enter") {
+							setShowResults(false);
+							setSelection({ model: tempModel });
+						}
+					}}
 					onBlur={() => setShowResults(false)}
 					onChange={(e) => setTempModel(e.target.value.trimStart())}
-					placeholder={selection.manufacturer === "intel" ? "i5-7400" : "Ryzen 7 5800H"}
+					placeholder={selection.manufacturer === "intel" ? "Core i5-7400" : "Ryzen 7 5800H"}
 					className="rounded-md bg-gray-200 p-2 disabled:cursor-not-allowed disabled:opacity-75"
 				/>
 
 				<Transition
 					as={Fragment}
 					show={searchTipVisible}
-					unmount={false}
 					enter="transition-opacity duration-300"
 					enterFrom="opacity-0"
 					enterTo="opacity-100"
@@ -163,7 +170,7 @@ const Selector = ({ setCPU, urlId }: SelectorProps) => {
 			>
 				<div
 					style={{ width: countdownBarPercent + "%" }}
-					className={`absolute ${searchTipVisible ? "top-0" : "bottom-0"} rounded-full left-[2px] -z-10 h-0.5 bg-blue-400`}
+					className={`absolute ${searchTipVisible ? "top-0" : "bottom-0"} left-[2px] -z-10 h-0.5 rounded-full bg-blue-400`}
 				></div>
 			</Transition>
 		</div>
@@ -184,6 +191,12 @@ const getMarkings = (state: Selection["state"]) => {
 		default:
 			return "bg-white/10 border-gray-500 hover:border-gray-400";
 	}
+};
+
+// Split the string on the first appearance of the separator
+const splitFirst = (str: string, separator: string) => {
+	const index = str.indexOf(separator);
+	return [str.substring(0, index), str.substring(index + 1)];
 };
 
 interface SelectorProps {

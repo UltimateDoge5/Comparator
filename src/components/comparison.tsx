@@ -25,55 +25,55 @@ const Comparison = ({ cpus }: { cpus: [CPU, CPU] }) => {
 							</th>
 						</tr>
 					</thead>
-					<tbody className="[&>tr]:border-b [&>tr]:bg-white/20">
-						{RenderComparison(cpus, FeatureNames)}
-					</tbody>
+					<tbody className="[&>tr]:border-b [&>tr]:bg-white/20">{RenderComparison(cpus, FeatureNames)}</tbody>
 				</table>
 			</m.div>
 		</LazyMotion>
 	);
 };
 
-const RenderComparison = (cpus: [CPU, CPU], list: FeatureList, ...keys: string[]): JSX.Element[] =>
-	(Object.keys(list) as (keyof CPU) []).map((key) => {
-		const feature = list[key as keyof typeof list] as Feature;
-		if (feature?.type === undefined) return RenderComparison(cpus, feature, key) as unknown as JSX.Element;
+const RenderComparison: (cpus: [CPU, CPU], list: FeatureList, ...keys: string[]) => JSX.Element = (
+	cpus: [CPU, CPU],
+	list: FeatureList,
+	...keys: string[]
+) => (
+	<Fragment key={keys.join("-")}>
+		{Object.keys(list).map((key) => {
+			const feature = list[key as keyof typeof list] as Feature;
+			if (feature?.type === undefined) return RenderComparison(cpus, feature, key);
 
-		// Get the values for the nested features
-		const [cpu1, cpu2] = cpus.map(cpu => traverse(cpu, ...keys));
+			const [cpu1, cpu2] = cpus.map((cpu) => traverse(cpu, ...keys));
 
-		switch (feature.type) {
-			case "custom":
-				return feature.parse(cpus);
-			case "string":
-				return (
-					<tr key={feature.title}>
-						<td>{feature.title}</td>
-						<td>{cpu1[key] as string}</td>
-						<td>{cpu2[key] as string}</td>
-					</tr>
-				);
-			case "number": {
-				const [a, b] = [cpu1[key] as number, cpu2[key] as number];
+			switch (feature.type) {
+				case "custom":
+					return feature.parse(cpus);
+				case "string":
+					return (
+						<tr key={key}>
+							<td>{feature.title}</td>
+							<td>{cpu1[key] as string}</td>
+							<td>{cpu2[key] as string}</td>
+						</tr>
+					);
+				case "number": {
+					const [a, b] = [cpu1[key] as number, cpu2[key] as number];
 
-				return (
-					<tr key={feature.title}>
-						<td>{feature.title}</td>
-						<td>
-							<span className={colorDiff(a, b)}>
-								{formatNumber(a, feature.unit || "")}
-							</span>
-						</td>
-						<td>
-							<span className={colorDiff(b, a)}>
-								{formatNumber(b, feature.unit || "")}
-							</span>
-						</td>
-					</tr>
-				);
+					return (
+						<tr key={key}>
+							<td>{feature.title}</td>
+							<td>
+								<span className={colorDiff(a, b)}>{formatNumber(a, feature.unit || "")}</span>
+							</td>
+							<td>
+								<span className={colorDiff(a, b, true)}>{formatNumber(b, feature.unit || "")}</span>
+							</td>
+						</tr>
+					);
+				}
 			}
-		}
-	});
+		})}
+	</Fragment>
+);
 
 const FeatureNames: FeatureList = {
 	cores: {
@@ -85,47 +85,50 @@ const FeatureNames: FeatureList = {
 				{cpus.map((cpu, i) => (
 					<td className="p-2" key={cpu.name}>
 						<span className={colorDiff(cpu.cores.total, cpus[1 - i].cores.total)}>
-						{cpu.cores.performance !== null && cpu.cores.efficient !== null ? (
-							<>{cpu.cores.performance} / {cpu.cores.efficient}</>
-						) : (cpu.cores.total)
-						}
+							{cpu.cores.performance !== null && cpu.cores.efficient !== null ? (
+								<>
+									{cpu.cores.performance}P / {cpu.cores.efficient}E
+								</>
+							) : (
+								cpu.cores.total
+							)}
 						</span>
 					</td>
 				))}
 			</tr>
-		)
+		),
 	},
 	threads: {
 		title: "Threads",
-		type: "number"
+		type: "number",
 	},
 	baseFrequency: {
 		title: "Base Frequency",
 		type: "number",
-		unit: "Hz"
+		unit: "Hz",
 	},
 	maxFrequency: {
 		title: "Max Frequency",
 		type: "number",
-		unit: "Hz"
+		unit: "Hz",
 	},
 	cache: {
 		title: "Cache",
 		type: "number",
-		unit: "B"
+		unit: "B",
 	},
 	tdp: {
 		title: "TDP",
 		type: "number",
-		unit: "W"
+		unit: "W",
 	},
 	lithography: {
 		title: "Lithography",
-		type: "string"
+		type: "string",
 	},
 	launchDate: {
 		title: "Launch Date",
-		type: "string"
+		type: "string",
 	},
 	memory: {
 		types: {
@@ -146,13 +149,13 @@ const FeatureNames: FeatureList = {
 						<MemoryComparison cpus={cpus} />
 					</tr>
 				</>
-			)
+			),
 		},
 		maxSize: {
 			title: "Max Size",
 			type: "number",
-			unit: "B"
-		}
+			unit: "B",
+		},
 	},
 	graphics: {
 		title: "Graphics",
@@ -168,8 +171,9 @@ const FeatureNames: FeatureList = {
 					</td>
 				</tr>
 				{GraphicsComparison({ cpus })}
-			</>)
-	}
+			</>
+		),
+	},
 };
 
 type FeatureList = {
@@ -179,11 +183,12 @@ type FeatureList = {
 type Feature = { title: string } & (
 	| { type: "number"; unit?: string }
 	| { type: "string" }
-	| { type: "custom"; card?: true; parse: (cpus: CPU[]) => JSX.Element });
-
+	| { type: "custom"; card?: true; parse: (cpus: CPU[]) => JSX.Element }
+);
 
 const MemoryComparison = ({ cpus }: { cpus: CPU[] }) => {
-	const matchingTypes = cpus[0].memory.types.filter((type) => cpus[1].memory.types.some((type2) => type2?.type === type?.type))
+	const matchingTypes = cpus[0].memory.types
+		.filter((type) => cpus[1].memory.types.some((type2) => type2?.type === type?.type))
 		.map((type) => type?.type);
 
 	const memorySpeeds = matchingTypes.map((type) => {
@@ -201,15 +206,19 @@ const MemoryComparison = ({ cpus }: { cpus: CPU[] }) => {
 							<span className={i % 2 ? colorDiff(b, a) : colorDiff(a, b)}>
 								{type} at {cpu.name === cpus[0].name ? a : b} MHz
 							</span>
-							 <br />
-						</Fragment>
-					))}
-					{cpu.memory.types.filter((type) => !matchingTypes.includes(type?.type)).map((type) => (
-						<Fragment key={type?.type}>
-							<span>{type?.type} at {type?.speed} MHz</span>
 							<br />
 						</Fragment>
 					))}
+					{cpu.memory.types
+						.filter((type) => !matchingTypes.includes(type?.type))
+						.map((type) => (
+							<Fragment key={type?.type}>
+								<span>
+									{type?.type} at {type?.speed} MHz
+								</span>
+								<br />
+							</Fragment>
+						))}
 				</td>
 			))}
 		</>
@@ -233,35 +242,58 @@ const GraphicsComparison = ({ cpus }: { cpus: CPU[] }) => {
 					cpu.graphics !== false ? (
 						<td
 							key={cpu.name}
-							className={colorDiff((cpus[0].graphics as Graphics).baseFrequency, (cpus[1].graphics as Graphics).baseFrequency, i === 0)}
+							className={colorDiff(
+								(cpus[0].graphics as Graphics)?.baseFrequency,
+								(cpus[1].graphics as Graphics)?.baseFrequency,
+								i === 1
+							)}
 						>
-								{formatNumber(cpu.graphics.baseFrequency, "Hz")}
-							</td>
+							{formatNumber(cpu.graphics.baseFrequency, "Hz")}
+						</td>
 					) : (
 						<td key={cpu.name} rowSpan={3}>
-								No graphics included
-							</td>
+							No graphics included
+						</td>
 					)
 				)}
-				</tr>
-				<tr>
-					<td>Boost clock</td>
-					{cpus.map(
-						(cpu, i) =>
-							cpu.graphics !== false && (
-								<td key={cpu.name} className={colorDiff((cpus[0].graphics as Graphics).maxFrequency, (cpus[1].graphics as Graphics).maxFrequency, i === 0)}>
-									{formatNumber(cpu.graphics.maxFrequency, "Hz")}
-								</td>
-							)
-					)}
-				</tr>
-				<tr>
-					<td>Max displays</td>
-					{cpus.map(
-						(cpu) => cpu.graphics !== false && <td key={cpu.name}>{cpu.graphics.displays || "Unknown"}</td>
-					)}
-				</tr>
-			</>
+			</tr>
+			<tr>
+				<td>Boost clock</td>
+				{cpus.map(
+					(cpu, i) =>
+						cpu.graphics !== false && (
+							<td
+								key={cpu.name}
+								className={colorDiff(
+									(cpus[0].graphics as Graphics)?.maxFrequency,
+									(cpus[1].graphics as Graphics)?.maxFrequency,
+									i === 1
+								)}
+							>
+								{formatNumber(cpu.graphics.maxFrequency, "Hz")}
+							</td>
+						)
+				)}
+			</tr>
+			<tr>
+				<td>Max displays</td>
+				{cpus.map(
+					(cpu, i) =>
+						cpu.graphics !== false && (
+							<td
+								key={cpu.name}
+								className={colorDiff(
+									(cpus[0].graphics as Graphics)?.displays,
+									(cpus[1].graphics as Graphics)?.displays,
+									i === 1
+								)}
+							>
+								{cpu.graphics.displays || "Unknown"}
+							</td>
+						)
+				)}
+			</tr>
+		</>
 	);
 };
 

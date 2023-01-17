@@ -20,6 +20,13 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 		res.status(400).send("Missing model");
 		return;
 	}
+	// Example: Core i5 or Core
+	// In this scenario it will fetch a random processor
+	// it makes sense to reject it
+	if (/(core[- ]i\d)(?!.)|(core[- ]i\d[- ])(?!.)/gi.test(model.trim().toLowerCase())) {
+		res.status(404).send("CPU not found");
+		return;
+	}
 
 	let cpu: CPU | null = req.query["no-cache"] === undefined ? await redis.get(`intel-${model}`) : null;
 
@@ -65,9 +72,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 	}
 
 	const data = await query.json();
-
 	let url = data?.results[0]?.uri;
-	// console.log("Fetching page: ", url);
 
 	if (!url) {
 		res.status(404).send("CPU not found");
@@ -77,9 +82,17 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 	// Sometimes the url path is good, but the last part is wrong
 	if (!url.includes("specifications")) {
 		const temp = url.split("/");
-		temp[temp.length - 1] = "specifications";
+		temp.pop();
+		temp.push("specifications");
 		url = temp.join("/");
 	}
+
+	// Sometimes the search url is from a different language
+	if (!url.includes("us/en")){
+		url = url.replace(/www(\/\w{2}\/)(\w{2})/g, "www/us/en");
+	}
+
+	if (process.env.NODE_ENV === "development") console.log("Fetching page: ", url);
 
 	// Get the data
 	const page = await fetch(url);
@@ -92,8 +105,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
 	$ = load(await page.text());
 
-	let cpuName = getParameter("Processor Number");
-	if (!cpuName?.startsWith("Intel")) cpuName = "Intel " + cpuName;
+	let cpuName = getParameter("Processor Number") ?? $(".headline").first().text().trim();
+	if (!cpuName?.includes("Intel")) cpuName = "Intel " + cpuName;
 
 	cpu = {
 		name: cpuName,
@@ -171,15 +184,15 @@ const getMemoryDetails = (): Memory["types"] => {
 			if (!mem) return null;
 			const [type, speed] = mem.trim().split(" ");
 
-			return { type: type, speed: parseInt(speed)};
+			return { type: type, speed: parseInt(speed) };
 		}).filter((mem) => mem !== null);
 	}
 
 	// DDR4-2133/2400, DDR3L-1333/1600
-	return memory.split(",").map((mem) => {
+	return memory.replaceAll(" ","-").split(",").map((mem) => {
 		const [type, speed] = mem.trim().split("-");
 
-		return { type: type, speed: parseInt(speed.split("/").pop() as string)};
+		return { type: type, speed: parseInt(speed.split("/").pop() as string) };
 	});
 };
 

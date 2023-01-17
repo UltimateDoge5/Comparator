@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { AMD_PRODUCTS } from "../../../util/products";
+import { AMD_PRODUCTS, INTEL_PRODUCTS } from "../../../util/products";
 import { Redis } from "@upstash/redis";
 import https from "https";
 
@@ -33,14 +33,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 		res.json(results);
 		return;
 	} else if (manufacturer === "intel") {
-		const list = await redis.get<string[]>("intel-cpus");
-
-		if (!list) {
-			res.json([]);
-			return;
-		}
-
-		res.json(list.filter((item) => item.includes(model as string)).slice(0, 3));
+		res.json(INTEL_PRODUCTS.filter((item) => item.includes(model as string)).slice(0, 3));
 		return;
 	}
 

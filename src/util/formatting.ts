@@ -9,6 +9,6 @@ export const formatNumber = (num: number | null, unit: string) => {
 
 export const colorDiff = (a: number | null, b: number | null, invert = false) => {
 	if (a === b) return "text-gray-50";
-	if (a === null || b === null) return "text-yellow-500";
-	return (a > b) === invert ? "text-green-500" : "text-red-500";
-}
+	if ((a === null || a === undefined) || (b === null || b === undefined)) return "text-yellow-500";
+	return (invert ? b > a : a > b) ? "text-green-500" : "text-red-500";
+};
