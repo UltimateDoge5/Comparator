@@ -28,7 +28,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 		return;
 	}
 
-	let cpu: CPU | null = req.query["no-cache"] === undefined ? await redis.get(`intel-${model}`) : null;
+	let cpu: CPU | null = req.query["no-cache"] === undefined || process.env.NODE_ENV !== "development" ? await redis.get(`intel-${model}`) : null;
 
 	if (cpu !== null && cpu.schemaVer >= parseFloat(process.env.MIN_SCHEMA_VERSION || "1.1")) {
 		res.json(cpu);
@@ -88,7 +88,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 	}
 
 	// Sometimes the search url is from a different language
-	if (!url.includes("us/en")){
+	if (!url.includes("us/en")) {
 		url = url.replace(/www(\/\w{2}\/)(\w{2})/g, "www/us/en");
 	}
 
@@ -105,8 +105,11 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
 	$ = load(await page.text());
 
+
 	let cpuName = getParameter("Processor Number") ?? $(".headline").first().text().trim();
 	if (!cpuName?.includes("Intel")) cpuName = "Intel " + cpuName;
+
+
 
 	cpu = {
 		name: cpuName,
@@ -173,7 +176,7 @@ const getFloatParameter = (name: string) => {
 };
 
 const getMemoryDetails = (): Memory["types"] => {
-	const memory = getParameter("Memory Types");
+	let memory = getParameter("Memory Types");
 	if (!memory) return [];
 
 	// Example:
@@ -188,12 +191,15 @@ const getMemoryDetails = (): Memory["types"] => {
 		}).filter((mem) => mem !== null);
 	}
 
-	// DDR4-2133/2400, DDR3L-1333/1600
-	return memory.replaceAll(" ","-").split(",").map((mem) => {
+	memory = memory.replaceAll(/@.*/g, "").replaceAll(", ", ",").trim().replaceAll(" ", "-");
+
+	// DDR4-2133/2400, DDR3L-1333/1600 @ 1.35V
+	return memory.split(",").map((mem) => {
 		const [type, speed] = mem.trim().split("-");
+		console.log(parseInt(speed.split("/").pop() ?? "0"));
 
 		return { type: type, speed: parseInt(speed.split("/").pop() as string) };
-	});
+	}).filter((mem) => mem?.speed !== null || mem !== null);
 };
 
 export const refreshToken = async () => {

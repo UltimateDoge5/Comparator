@@ -38,7 +38,7 @@ const Selector = ({ setCPU, urlId }: SelectorProps) => {
 					setSelection({ model: tempModel, state: "loading" });
 				}
 				setCountdownBarPercent(percent);
-			}, 17);
+			}, window.matchMedia("(max-width: 768px)").matches ? 35 : 20);
 		}
 
 		return () => window.clearInterval(intervalRef.current);
