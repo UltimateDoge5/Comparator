@@ -17,12 +17,12 @@ const Comparison = ({ cpus }: { cpus: [CPU, CPU] }) => {
 					<thead className="bg-gray-50 text-xl uppercase text-gray-700 dark:bg-gray-700 dark:text-gray-300">
 						<tr className="border-b border-black">
 							<th className="p-2 text-left">Feature</th>
-							<th className="p-2 text-left underline">
-								<a href={cpus[0].source}>{cpus[0].name}</a>
-							</th>
-							<th className="p-2 text-left underline">
-								<a href={cpus[1].source}>{cpus[1].name}</a>
-							</th>
+							{cpus.map((cpu) => (
+								<th className="p-2 text-left underline" key={cpu.name}>
+									{cpu.name}
+								</th>
+							))}
+							
 						</tr>
 					</thead>
 					<tbody className="[&>tr]:border-b [&>tr]:bg-white/20">{RenderComparison(cpus, FeatureNames)}</tbody>
@@ -90,45 +90,45 @@ const FeatureNames: FeatureList = {
 									{cpu.cores.performance}P / {cpu.cores.efficient}E
 								</>
 							) : (
-								cpu.cores.total
-							)}
+								 cpu.cores.total
+							 )}
 						</span>
 					</td>
 				))}
 			</tr>
-		),
+		)
 	},
 	threads: {
 		title: "Threads",
-		type: "number",
+		type: "number"
 	},
 	baseFrequency: {
 		title: "Base Frequency",
 		type: "number",
-		unit: "Hz",
+		unit: "Hz"
 	},
 	maxFrequency: {
 		title: "Max Frequency",
 		type: "number",
-		unit: "Hz",
+		unit: "Hz"
 	},
 	cache: {
 		title: "Cache",
 		type: "number",
-		unit: "B",
+		unit: "B"
 	},
 	tdp: {
 		title: "TDP",
 		type: "number",
-		unit: "W",
+		unit: "W"
 	},
 	lithography: {
 		title: "Lithography",
-		type: "string",
+		type: "string"
 	},
 	launchDate: {
 		title: "Launch Date",
-		type: "string",
+		type: "string"
 	},
 	memory: {
 		types: {
@@ -149,13 +149,13 @@ const FeatureNames: FeatureList = {
 						<MemoryComparison cpus={cpus} />
 					</tr>
 				</>
-			),
+			)
 		},
 		maxSize: {
 			title: "Max Size",
 			type: "number",
-			unit: "B",
-		},
+			unit: "B"
+		}
 	},
 	graphics: {
 		title: "Graphics",
@@ -172,8 +172,8 @@ const FeatureNames: FeatureList = {
 				</tr>
 				{GraphicsComparison({ cpus })}
 			</>
-		),
-	},
+		)
+	}
 };
 
 type FeatureList = {
@@ -184,7 +184,7 @@ type Feature = { title: string } & (
 	| { type: "number"; unit?: string }
 	| { type: "string" }
 	| { type: "custom"; card?: true; parse: (cpus: CPU[]) => JSX.Element }
-);
+	);
 
 const MemoryComparison = ({ cpus }: { cpus: CPU[] }) => {
 	const matchingTypes = cpus[0].memory.types
