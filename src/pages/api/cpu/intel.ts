@@ -10,7 +10,7 @@ import type { Memory } from "../../../../CPU";
 let $: CheerioAPI;
 
 const redis = Redis.fromEnv({
-	agent: new https.Agent({ keepAlive: true })
+	agent: new https.Agent({ keepAlive: true }),
 });
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
@@ -28,40 +28,42 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 		return;
 	}
 
-	let cpu: CPU | null = req.query["no-cache"] === undefined || process.env.NODE_ENV !== "development" ? await redis.get(`intel-${model}`) : null;
+	let cpu: CPU | null =
+		req.query["no-cache"] === undefined || process.env.NODE_ENV !== "development"
+			? await redis.get(`intel-${model}`)
+			: null;
 
 	if (cpu !== null && cpu.schemaVer >= parseFloat(process.env.MIN_SCHEMA_VERSION || "1.1")) {
 		res.json(cpu);
 		return;
 	}
 
-	const token = await redis.get("intel-token") ?? await refreshToken();
+	const token = (await redis.get("intel-token")) ?? (await refreshToken());
 
 	// Get the url
 	let query = await fetch("https://platform.cloud.coveo.com/rest/search/v2?f:@tabfilter=[Products]", {
 		method: "POST",
 		headers: {
 			"Content-Type": "application/json",
-			Authorization: "Bearer " + token as string
+			Authorization: ("Bearer " + token) as string,
 		},
 		body: JSON.stringify({
 			q: model,
-			numberOfResults: 1
-		})
+			numberOfResults: 1,
+		}),
 	});
-
 
 	if (query.status === 419) {
 		const token = await refreshToken();
 		query = await fetch("https://platform.cloud.coveo.com/rest/search/v2?f:@tabfilter=[Products]", {
 			method: "POST",
 			headers: {
-				Authorization: token
+				Authorization: token,
 			},
 			body: JSON.stringify({
 				q: model,
-				numberOfResults: 1
-			})
+				numberOfResults: 1,
+			}),
 		});
 	}
 
@@ -105,11 +107,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
 	$ = load(await page.text());
 
-
 	let cpuName = getParameter("Processor Number") ?? $(".headline").first().text().trim();
 	if (!cpuName?.includes("Intel")) cpuName = "Intel " + cpuName;
-
-
 
 	cpu = {
 		name: cpuName,
@@ -119,7 +118,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 		cores: {
 			total: getFloatParameter("Total Cores"),
 			efficient: getFloatParameter("# of Efficient-cores"),
-			performance: getFloatParameter("# of Performance-cores")
+			performance: getFloatParameter("# of Performance-cores"),
 		},
 		threads: getFloatParameter("Total Threads"),
 		baseFrequency:
@@ -129,29 +128,29 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 		launchDate: getParameter("Launch Date") as string,
 		memory: {
 			types: getMemoryDetails(),
-			maxSize: getFloatParameter("Max Memory Size")
+			maxSize: getFloatParameter("Max Memory Size"),
 		},
 		graphics: cpuName?.includes("F")
-		          ? false
-		          : {
-				baseFrequency: getFloatParameter("Graphics Base Frequency"),
-				maxFrequency: getFloatParameter("Graphics Max Dynamic Frequency"),
-				displays: getFloatParameter("Max # of Displays Supported") ?? getFloatParameter("# of Displays Supported")
-			},
+			? false
+			: {
+					baseFrequency: getFloatParameter("Graphics Base Frequency"),
+					maxFrequency: getFloatParameter("Graphics Max Dynamic Frequency"),
+					displays:
+						getFloatParameter("Max # of Displays Supported") ??
+						getFloatParameter("# of Displays Supported"),
+			  },
 		pcie: getParameter("PCI Express Revision"),
 		source: url,
-		schemaVer: 1.1
+		schemaVer: 1.1,
 	};
 
-	if (process.env.NODE_ENV === "production" || req.query["no-cache"] !== undefined) await redis.set(`intel-${model}`, cpu);
+	if (process.env.NODE_ENV === "production" || req.query["no-cache"] !== undefined)
+		await redis.set(`intel-${model}`, cpu);
 	res.status(200).json(cpu);
 };
 
-const getParameter = (name: string) => elementSelector($, ".tech-label span", name)
-	?.parent()
-	.parent()
-	.find(".tech-data span")
-	.text() ?? null;
+const getParameter = (name: string) =>
+	elementSelector($, ".tech-label span", name)?.parent().parent().find(".tech-data span").text() ?? null;
 
 const getFloatParameter = (name: string) => {
 	const param = getParameter(name)?.split(" ");
@@ -183,23 +182,30 @@ const getMemoryDetails = (): Memory["types"] => {
 	// Up to DDR5 4800 MT/s
 	// Up to DDR4 3200 MT/s
 	if (memory.includes("Up to")) {
-		return memory.replaceAll("Up to", "").split("MT/s").map((mem) => {
-			if (!mem) return null;
-			const [type, speed] = mem.trim().split(" ");
+		return memory
+			.replaceAll("Up to", "")
+			.split("MT/s")
+			.map((mem) => {
+				if (!mem) return null;
+				const [type, speed] = mem.trim().split(" ");
 
-			return { type: type, speed: parseInt(speed) };
-		}).filter((mem) => mem !== null);
+				return { type: type, speed: parseInt(speed) };
+			})
+			.filter((mem) => mem !== null);
 	}
 
 	memory = memory.replaceAll(/@.*/g, "").replaceAll(", ", ",").trim().replaceAll(" ", "-");
 
 	// DDR4-2133/2400, DDR3L-1333/1600 @ 1.35V
-	return memory.split(",").map((mem) => {
-		const [type, speed] = mem.trim().split("-");
-		console.log(parseInt(speed.split("/").pop() ?? "0"));
+	return memory
+		.split(",")
+		.map((mem) => {
+			const [type, speed] = mem.trim().split("-");
+			console.log(parseInt(speed.split("/").pop() ?? "0"));
 
-		return { type: type, speed: parseInt(speed.split("/").pop() as string) };
-	}).filter((mem) => mem?.speed !== null || mem !== null);
+			return { type: type, speed: parseInt(speed.split("/").pop() as string) };
+		})
+		.filter((mem) => mem?.speed !== null || mem !== null);
 };
 
 export const refreshToken = async () => {

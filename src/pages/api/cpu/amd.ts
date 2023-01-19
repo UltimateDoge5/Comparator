@@ -11,7 +11,7 @@ import https from "https";
 let $: CheerioAPI;
 
 const redis = Redis.fromEnv({
-	agent: new https.Agent({ keepAlive: true })
+	agent: new https.Agent({ keepAlive: true }),
 });
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
@@ -45,7 +45,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
 	try {
 		productPage = await axios.get(`https://www.amd.com${url}`, {
-			timeout: 5000
+			timeout: 5000,
 		});
 	} catch (error) {
 		console.error(error);
@@ -86,7 +86,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 		cores: {
 			total: getFloatParameter("# of CPU Cores"),
 			performance: null,
-			efficient: null
+			efficient: null,
 		},
 		tdp: getFloatParameter("Default TDP"),
 		threads: getFloatParameter("# of Threads"),
@@ -97,23 +97,29 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 		launchDate: getLaunchDate(getParameter("Launch Date") ?? ""),
 		memory: {
 			types: getMemoryDetails(),
-			maxSize: getFloatParameter("Max Memory Size (dependent on memory type)") || getFloatParameter("Max. Memory")
+			maxSize:
+				getFloatParameter("Max Memory Size (dependent on memory type)") || getFloatParameter("Max. Memory"),
 		},
-		graphics: getParameter("Integrated Graphics") === "Yes" ? {
-			baseFrequency: getFloatParameter("Graphics Base Frequency") ?? getFloatParameter("Graphics Frequency"),
-			maxFrequency: getFloatParameter("Graphics Max Dynamic Frequency"),
-			displays: getFloatParameter("Max # of Displays Supported")
-		} : false,
+		graphics:
+			getParameter("Integrated Graphics") === "Yes"
+				? {
+						baseFrequency:
+							getFloatParameter("Graphics Base Frequency") ?? getFloatParameter("Graphics Frequency"),
+						maxFrequency: getFloatParameter("Graphics Max Dynamic Frequency"),
+						displays: getFloatParameter("Max # of Displays Supported"),
+				  }
+				: false,
 		pcie: getParameter("PCI Express Revision"),
 		source: `https://www.amd.com${specsLink}`,
-		schemaVer: 1.1
+		schemaVer: 1.1,
 	};
 
 	if (process.env.NODE_ENV === "production" || req.query["no-cache"] !== undefined) await redis.set(model, cpu);
 	res.status(200).json(cpu);
 };
 
-const getParameter = (name: string) => elementSelector($, ".field__label", name)?.parent().find(".field__item").text().trim() || null;
+const getParameter = (name: string) =>
+	elementSelector($, ".field__label", name)?.parent().find(".field__item").text().trim() || null;
 
 // AMD doesn't space the values and units, but they set a meta-tag with the value
 const getFloatParameter = (name: string, normalize = true) => {
@@ -132,10 +138,10 @@ const getFloatParameter = (name: string, normalize = true) => {
 };
 
 const Prefixes = {
-	"base": 1,
-	"K": 1e4,
-	"M": 1e6,
-	"G": 1e9
+	base: 1,
+	K: 1e4,
+	M: 1e6,
+	G: 1e9,
 };
 
 const getLaunchDate = (string: string) => {
@@ -157,15 +163,18 @@ const getMemoryDetails = (): Memory["types"] => {
 	// DDR4 - Up to 3200MHz
 	// LPDDR4 - Up to 4266MHz
 	if (memory?.includes("Up to")) {
-		return memory.split("Hz").map((type) => {
-			if (!type) return null;
-			const [name, speed] = type.split("-");
+		return memory
+			.split("Hz")
+			.map((type) => {
+				if (!type) return null;
+				const [name, speed] = type.split("-");
 
-			return {
-				type: name.trim(),
-				speed: parseInt(speed.trim().replace("Up to", ""))
-			};
-		}).filter((type) => type);
+				return {
+					type: name.trim(),
+					speed: parseInt(speed.trim().replace("Up to", "")),
+				};
+			})
+			.filter((type) => type);
 	}
 
 	// Example:
@@ -176,8 +185,8 @@ const getMemoryDetails = (): Memory["types"] => {
 		return [
 			{
 				type: memory,
-				speed: speed
-			}
+				speed: speed,
+			},
 		];
 	}
 
@@ -194,8 +203,8 @@ const getMemoryDetails = (): Memory["types"] => {
 	return [
 		{
 			type: memory,
-			speed: maxSpeed
-		}
+			speed: maxSpeed,
+		},
 	];
 };
 

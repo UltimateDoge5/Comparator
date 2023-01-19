@@ -2,16 +2,22 @@ import type { CPU, Manufacturer } from "../../CPU";
 import { Fragment, useEffect, useReducer, useRef, useState } from "react";
 import { Transition } from "@headlessui/react";
 import fetchCPU from "../util/fetchCPU";
+import { ReloadIcon } from "./icons";
+import { domAnimation, LazyMotion, m, useTime, useTransform } from "framer-motion";
 
 const Selector = ({ setCPU, urlId }: SelectorProps) => {
-	const [selection, setSelection] = useReducer((prev: Selection, next: Partial<Selection>) => ({ ...prev, ...next }), {
-		manufacturer: "intel",
-		model: "",
-		state: "idle"
-	});
+	const [selection, setSelection] = useReducer(
+		(prev: Selection, next: Partial<Selection>) => ({ ...prev, ...next }),
+		{
+			manufacturer: "intel",
+			model: "",
+			state: "idle",
+		}
+	);
 
 	const [tempModel, setTempModel] = useState("");
 	const [countdownBarPercent, setCountdownBarPercent] = useState(100);
+	const [refetch, setRefetch] = useState(false);
 
 	const [searchResults, setSearchResults] = useState<string[]>([]);
 	const [showResults, setShowResults] = useState(false);
@@ -23,22 +29,24 @@ const Selector = ({ setCPU, urlId }: SelectorProps) => {
 	const omittedSearch = searchResults.filter((r) => r !== tempModel);
 	const searchTipVisible = showResults && searchResults.length > 0 && tempModel.length > 3;
 
-
 	// Handle the countdown bar
 	useEffect(() => {
 		if (selection.state === "loading") return () => clearInterval(intervalRef.current);
 
 		if (barVisible) {
 			let percent = 100;
-			intervalRef.current = window.setInterval(async () => {
-				percent -= 1;
-				if (percent <= 0) {
-					clearInterval(intervalRef.current);
-					// No need to await this
-					setSelection({ model: tempModel, state: "loading" });
-				}
-				setCountdownBarPercent(percent);
-			}, window.matchMedia("(max-width: 768px)").matches ? 35 : 20);
+			intervalRef.current = window.setInterval(
+				async () => {
+					percent -= 1;
+					if (percent <= 0) {
+						clearInterval(intervalRef.current);
+						// No need to await this
+						setSelection({ model: tempModel, state: "loading" });
+					}
+					setCountdownBarPercent(percent);
+				},
+				window.matchMedia("(max-width: 768px)").matches ? 35 : 20
+			);
 		}
 
 		return () => window.clearInterval(intervalRef.current);
@@ -87,19 +95,50 @@ const Selector = ({ setCPU, urlId }: SelectorProps) => {
 			searchRef.current = window.setTimeout(async () => {
 				await fetch(`/api/cpu/search?manufacturer=${selection.manufacturer}&model=${tempModel}`)
 					.catch(() => setSearchResults([]))
-					.then(res => res?.json())
-					.then(res => {
+					.then((res) => res?.json())
+					.then((res) => {
 						setSearchResults(res);
 					});
 			}, 350);
 		}
 	}, [selection, tempModel]);
 
+	const RefetchButton = () => {
+		const time = useTime();
+		const rotate = useTransform(time, [0, 2000], [0, 360], { clamp: false });
+
+		return (
+			<button
+				onClick={() => {
+					setRefetch(true);
+					fetchCPU(selection.manufacturer, selection.model, true).then((cpu) => {
+						setRefetch(false);
+						if (cpu.error) return console.error(cpu.error);
+						setCPU(cpu.data);
+					});
+				}}
+				title="Reload data without cache"
+				disabled={selection.state !== "success" || refetch}
+				className="hidden rounded-md border border-gray-400/20 bg-gray-400/20 p-2 transition-all
+			 enabled:cursor-pointer enabled:hover:bg-gray-200/50 disabled:cursor-not-allowed disabled:opacity-50 md:block"
+			>
+				<LazyMotion features={domAnimation}>
+					<m.div style={{ rotate: refetch ? rotate : 0 }}>
+						<ReloadIcon className="h-5 w-5 text-white/60" />
+					</m.div>
+				</LazyMotion>
+			</button>
+		);
+	};
 	return (
-		<div className={`relative flex items-center gap-4 rounded-md border p-4 transition-colors ${getMarkings(selection.state)}`}>
+		<div
+			className={`relative flex items-center gap-3 rounded-md border p-4 transition-colors ${getMarkings(
+				selection.state
+			)}`}
+		>
 			<select
 				value={selection.manufacturer}
-				disabled={selection.state === "loading"}
+				disabled={selection.state === "loading" || refetch}
 				className="rounded-md bg-gray-200 p-2 disabled:cursor-not-allowed disabled:opacity-75"
 				onChange={(e) => {
 					setSelection({ model: "", manufacturer: e.target.value as Manufacturer });
@@ -112,8 +151,8 @@ const Selector = ({ setCPU, urlId }: SelectorProps) => {
 			<div className="relative">
 				<input
 					value={tempModel}
-					disabled={selection.state === "loading"}
-					onFocus={() => (omittedSearch.length > 0) && setShowResults(true)}
+					disabled={selection.state === "loading" || refetch}
+					onFocus={() => omittedSearch.length > 0 && setShowResults(true)}
 					onKeyDown={(e) => {
 						if (tempModel !== selection.model && !showResults) setShowResults(true);
 
@@ -139,7 +178,9 @@ const Selector = ({ setCPU, urlId }: SelectorProps) => {
 					leaveTo="opacity-0"
 				>
 					<div
-						className={`absolute top-full z-20 flex w-max rounded-lg bg-white p-2 shadow-md transition-all ${previewPositions[omittedSearch.length - 1]}`}
+						className={`absolute top-full z-20 flex w-max rounded-lg bg-white p-2 shadow-md transition-all ${
+							previewPositions[omittedSearch.length - 1]
+						}`}
 					>
 						{omittedSearch.map((result) => (
 							<div
@@ -156,7 +197,7 @@ const Selector = ({ setCPU, urlId }: SelectorProps) => {
 					</div>
 				</Transition>
 			</div>
-
+			<RefetchButton />
 			<Transition
 				as={Fragment}
 				appear={true}
@@ -170,7 +211,9 @@ const Selector = ({ setCPU, urlId }: SelectorProps) => {
 			>
 				<div
 					style={{ width: countdownBarPercent + "%" }}
-					className={`absolute ${searchTipVisible ? "top-0" : "bottom-0"} left-[2px] -z-10 h-0.5 rounded-full bg-blue-400`}
+					className={`absolute ${
+						searchTipVisible ? "top-0" : "bottom-0"
+					} left-[2px] -z-10 h-0.5 rounded-full bg-blue-400`}
 				></div>
 			</Transition>
 		</div>
@@ -200,8 +243,8 @@ const splitFirst = (str: string, separator: string) => {
 };
 
 interface SelectorProps {
-	setCPU: (cpu: CPU | null) => void,
-	urlId: string
+	setCPU: (cpu: CPU | null) => void;
+	urlId: string;
 }
 
 export interface Selection {

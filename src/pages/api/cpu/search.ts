@@ -1,11 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { AMD_PRODUCTS, INTEL_PRODUCTS } from "../../../util/products";
-import { Redis } from "@upstash/redis";
-import https from "https";
-
-const redis = Redis.fromEnv({
-	agent: new https.Agent({ keepAlive: true })
-});
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 	const { manufacturer } = req.query;
@@ -16,7 +10,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 		return;
 	}
 
-	// Get 5 amd results close to the given model
+	// Get 3 amd results close to the given model
 	if (manufacturer === "amd") {
 		model = model.trim().replace(/ /g, "-").toLowerCase();
 		if (!model.startsWith("amd-")) model = `amd-${model}`;
@@ -24,11 +18,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 		const results = AMD_PRODUCTS.map((p) => p.split("/").pop() as string)
 			.filter((p) => p?.includes(model as string))
 			.slice(0, 3)
-			.map((p) =>
-				p?.replace(/-/g, " ")
-					.replace("amd", "")
-					.replace("r", "R")
-					.trim())
+			.map((p) => p?.replace(/-/g, " ").replace("amd", "").replace("r", "R").trim());
 
 		res.json(results);
 		return;

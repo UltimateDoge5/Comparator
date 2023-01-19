@@ -22,7 +22,6 @@ const Comparison = ({ cpus }: { cpus: [CPU, CPU] }) => {
 									<a href={cpu.source} target="_blank" rel="noreferrer">{cpu.name}</a>
 								</th>
 							))}
-							
 						</tr>
 					</thead>
 					<tbody className="[&>tr]:border-b [&>tr]:bg-white/20">{RenderComparison(cpus, FeatureNames)}</tbody>
