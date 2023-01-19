@@ -4,6 +4,7 @@ import type { CPU } from "../../CPU";
 import Comparison from "../components/comparison";
 
 import Selector from "../components/selector";
+import { ToastContainer } from "react-toastify";
 
 export default function Index() {
 	const [cpus, setCpus] = useState<[CPU | null, CPU | null]>([null, null]);
@@ -80,11 +81,12 @@ export default function Index() {
 				</p>
 				<iframe
 					src="https://ghbtns.com/github-btn.html?user=UltimateDoge5&repo=comparator&type=star&count=true"
-					width="150"
+					width="72"
 					height="20"
 					title="GitHub"
 				/>
 			</footer>
+			<ToastContainer autoClose={2500} position="bottom-left" theme="dark" draggable={false} />
 		</>
 	);
 }

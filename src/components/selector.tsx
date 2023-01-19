@@ -4,6 +4,7 @@ import { Transition } from "@headlessui/react";
 import fetchCPU from "../util/fetchCPU";
 import { ReloadIcon } from "./icons";
 import { domAnimation, LazyMotion, m, useTime, useTransform } from "framer-motion";
+import { toast } from "react-toastify";
 
 const Selector = ({ setCPU, urlId }: SelectorProps) => {
 	const [selection, setSelection] = useReducer(
@@ -71,6 +72,7 @@ const Selector = ({ setCPU, urlId }: SelectorProps) => {
 			fetchCPU(selection.manufacturer, selection.model).then((cpu) => {
 				if (cpu.error) {
 					setSelection({ state: "error" });
+					toast.error(cpu.error)
 					return;
 				}
 
@@ -113,7 +115,7 @@ const Selector = ({ setCPU, urlId }: SelectorProps) => {
 					setRefetch(true);
 					fetchCPU(selection.manufacturer, selection.model, true).then((cpu) => {
 						setRefetch(false);
-						if (cpu.error) return console.error(cpu.error);
+						if (cpu.error) return toast.error(cpu.error);
 						setCPU(cpu.data);
 					});
 				}}
