@@ -201,7 +201,6 @@ const getMemoryDetails = (): Memory["types"] => {
 		.split(",")
 		.map((mem) => {
 			const [type, speed] = mem.trim().split("-");
-			console.log(parseInt(speed.split("/").pop() ?? "0"));
 
 			return { type: type, speed: parseInt(speed.split("/").pop() as string) };
 		})

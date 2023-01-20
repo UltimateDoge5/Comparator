@@ -1,7 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import type { CheerioAPI } from "cheerio";
 import { load } from "cheerio";
-import axios from "axios";
 import type { CPU, Memory } from "../../../../CPU";
 import elementSelector from "../../../util/selectors";
 import { Redis } from "@upstash/redis";
@@ -41,17 +40,22 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 	}
 
 	// Get the product page, and find the link to specs page
-	let productPage;
-
-	try {
-		productPage = await axios.get(`https://www.amd.com${url}`, {
-			timeout: 5000,
-		});
-	} catch (error) {
-		console.error(error);
-		res.status(500).send("AMD server is not responding");
-		return;
-	}
+	const productPage = await fetch(`https://${process.env.BROWSERLESS_URL}/scrape?token=${process.env.BROWSERLESS_TOKEN}`, {
+		method: "POST",
+		body: JSON.stringify({
+				url: `https://www.amd.com${url}`,
+				"userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.125 Safari/537.36",
+				elements: [
+					{
+						selector: ".full_specs_link a",
+					},
+				],
+			},
+		),
+		headers: {
+			"Content-Type": "application/json",
+		},
+	});
 
 	if (productPage.status !== 200) {
 		console.error(productPage.statusText);
@@ -59,9 +63,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 		return;
 	}
 
-	$ = load(await productPage.data);
-
-	const specsLink = $(".full_specs_link a").attr("href");
+	const specsLink = (await productPage.json())?.data[0]?.results[0]?.attributes?.find((item: any) => item.name === "href")?.value;
 
 	if (!specsLink) {
 		res.status(404).send("Unable to find the specs page");
@@ -69,7 +71,17 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 	}
 
 	//Get the specs page
-	const specsPage = await axios.get(`https://www.amd.com${specsLink}`, { timeout: 4500 });
+	const specsPage = await fetch(`https://${process.env.BROWSERLESS_URL}/content?token=${process.env.BROWSERLESS_TOKEN}`, {
+		method: "POST",
+		body: JSON.stringify({
+			url: `https://www.amd.com${specsLink}`,
+			"userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.125 Safari/537.36",
+		}),
+		headers: {
+			"Content-Type": "application/json",
+		},
+	});
+
 	if (process.env.NODE_ENV === "development") console.log("Fetching page: ", `https://www.amd.com${specsLink}`);
 
 	if (specsPage.status !== 200) {
@@ -78,7 +90,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 		return;
 	}
 
-	$ = load(await specsPage.data);
+	$ = load(await specsPage.text());
 
 	cpu = {
 		name: $(".section-title").text().trim(),
@@ -102,13 +114,13 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 		},
 		graphics:
 			getParameter("Integrated Graphics") === "Yes"
-				? {
-						baseFrequency:
-							getFloatParameter("Graphics Base Frequency") ?? getFloatParameter("Graphics Frequency"),
-						maxFrequency: getFloatParameter("Graphics Max Dynamic Frequency"),
-						displays: getFloatParameter("Max # of Displays Supported"),
-				  }
-				: false,
+			? {
+					baseFrequency:
+						getFloatParameter("Graphics Base Frequency") ?? getFloatParameter("Graphics Frequency"),
+					maxFrequency: getFloatParameter("Graphics Max Dynamic Frequency"),
+					displays: getFloatParameter("Max # of Displays Supported"),
+				}
+			: false,
 		pcie: getParameter("PCI Express Revision"),
 		source: `https://www.amd.com${specsLink}`,
 		schemaVer: 1.1,
