@@ -13,7 +13,7 @@ const Selector = ({ setCPU, urlId }: SelectorProps) => {
 			manufacturer: "intel",
 			model: "",
 			state: "idle",
-		}
+		},
 	);
 
 	const [tempModel, setTempModel] = useState("");
@@ -46,7 +46,7 @@ const Selector = ({ setCPU, urlId }: SelectorProps) => {
 					}
 					setCountdownBarPercent(percent);
 				},
-				window.matchMedia("(max-width: 768px)").matches ? 35 : 20
+				window.matchMedia("(max-width: 768px)").matches ? 35 : 20,
 			);
 		}
 
@@ -72,7 +72,7 @@ const Selector = ({ setCPU, urlId }: SelectorProps) => {
 			fetchCPU(selection.manufacturer, selection.model).then((cpu) => {
 				if (cpu.error) {
 					setSelection({ state: "error" });
-					toast.error(cpu.error)
+					toast.error(cpu.error.text);
 					return;
 				}
 
@@ -115,7 +115,11 @@ const Selector = ({ setCPU, urlId }: SelectorProps) => {
 					setRefetch(true);
 					fetchCPU(selection.manufacturer, selection.model, true).then((cpu) => {
 						setRefetch(false);
-						if (cpu.error) return toast.error(cpu.error);
+						if (cpu.error) {
+							toast.error(cpu.error.code === 504 ? "The server is taking too long to respond. Try again later." : cpu.error.text);
+							return;
+						}
+						toast.success("Successfully re-fetched the CPU!");
 						setCPU(cpu.data);
 					});
 				}}
@@ -135,7 +139,7 @@ const Selector = ({ setCPU, urlId }: SelectorProps) => {
 	return (
 		<div
 			className={`relative flex items-center gap-3 rounded-md border p-4 transition-colors ${getMarkings(
-				selection.state
+				selection.state,
 			)}`}
 		>
 			<select
