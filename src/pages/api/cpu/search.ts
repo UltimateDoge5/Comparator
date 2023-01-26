@@ -23,7 +23,10 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 		res.json(results);
 		return;
 	} else if (manufacturer === "intel") {
-		res.json(INTEL_PRODUCTS.filter((item) => item.includes(model as string)).slice(0, 3));
+		// If there is no "core" in the string or signs of it, prepend it
+		if (!/[core]/gi.test(model.trim().toLowerCase())) model = "core " + model;
+		if(/i\d /i.test(model.trim().toLowerCase())) model = model.trim().replace(/(i\d) /i, "$1-");
+		res.json(INTEL_PRODUCTS.filter((item) => item.toLowerCase().includes(model as string)).slice(0, 3));
 		return;
 	}
 

@@ -13,12 +13,12 @@ const Comparison = ({ cpus }: { cpus: [CPU, CPU] }) => {
 				transition={{ duration: 0.3 }}
 				className="relative overflow-x-auto shadow-md sm:rounded-t-md"
 			>
-				<table className="w-full table-fixed text-left text-xl text-slate-500 dark:text-gray-300 md:text-2xl [&_td,&_th]:px-4 [&_td,&_th]:py-2">
-					<thead className="bg-gray-50 text-base uppercase text-gray-700 dark:bg-gray-700 dark:text-gray-300 md:text-xl">
+				<table className="w-full table-fixed text-left text-xl text-gray-300 md:text-2xl [&_td,&_th]:px-4 [&_td,&_th]:py-2">
+					<thead className="bg-gray-700 text-base uppercase text-gray-300 md:text-xl">
 						<tr className="border-b border-black">
 							<th className="p-2 text-left">Feature</th>
 							{cpus.map((cpu) => (
-								<th className="p-2 text-left underline" key={cpu.name}>
+								<th className="p-2 text-left underline transition-colors hover:text-white" key={cpu.name}>
 									<a href={cpu.source} target="_blank" rel="noreferrer">{cpu.name}</a>
 								</th>
 							))}
@@ -138,7 +138,7 @@ const FeatureNames: FeatureList = {
 					<tr>
 						<td
 							colSpan={3}
-							className="bg-gray-50 text-center text-xl uppercase text-gray-700 dark:bg-gray-700 dark:text-gray-300"
+							className="bg-gray-700 text-center text-xl uppercase text-gray-300"
 						>
 							Memory
 						</td>
@@ -164,7 +164,7 @@ const FeatureNames: FeatureList = {
 				<tr>
 					<td
 						colSpan={3}
-						className="bg-gray-50 text-center text-xl uppercase text-gray-700 dark:bg-gray-700 dark:text-gray-300"
+						className="bg-gray-700 text-center text-xl uppercase text-gray-300"
 					>
 						Graphics
 					</td>

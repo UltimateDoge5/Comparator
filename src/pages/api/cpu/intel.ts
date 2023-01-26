@@ -23,7 +23,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 	// Example: Core i5 or Core
 	// In this scenario it will fetch a random processor
 	// it makes sense to reject it
-	if (/(core[- ]i\d)(?!.)|(core[- ]i\d[- ])(?!.)/gi.test(model.trim().toLowerCase())) {
+	if (/(core[- ]i\d)(?!.)|(core[- ]i\d[- ])(?!.)/gi.test(model.trim().toLowerCase()) || model.trim().toLowerCase() === "core") {
 		res.status(404).send("CPU not found");
 		return;
 	}

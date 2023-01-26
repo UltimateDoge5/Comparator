@@ -37,8 +37,8 @@ export default function Index() {
 					<Selector setCPU={(cpu) => setCpus((prev) => [prev[0], cpu])} urlId="s" />
 				</section>
 				<hr className="h-1 w-2/5 border-gray-500" />
-				<section className="mb-12 w-full p-4 md:w-5/6 lg:w-1/2">
-					<div className="mb-8 hidden justify-center gap-6 text-white md:flex">
+				<section className="mb-12 flex w-full  flex-col items-center p-4 md:w-5/6 lg:w-1/2">
+					<div className="mb-8 hidden w-fit justify-center gap-6 rounded-lg p-2 text-white md:flex">
 						<div className="flex gap-2">
 							<div className="h-6 w-12 rounded bg-green-500" /> Better
 						</div>
