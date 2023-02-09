@@ -2,6 +2,7 @@ import type { CPU, Graphics } from "../../CPU";
 import { Fragment } from "react";
 import { domAnimation, LazyMotion, m } from "framer-motion";
 import { colorDiff, formatNumber } from "../util/formatting";
+import Link from "next/link";
 
 // Compare two CPUs
 const Comparison = ({ cpus }: { cpus: [CPU, CPU] }) => {
@@ -19,7 +20,7 @@ const Comparison = ({ cpus }: { cpus: [CPU, CPU] }) => {
 							<th className="p-2 text-left">Feature</th>
 							{cpus.map((cpu) => (
 								<th className="p-2 text-left underline transition-colors hover:text-white" key={cpu.name}>
-									<a href={cpu.source} target="_blank" rel="noreferrer">{cpu.name}</a>
+									<Link href={`/cpu/${cpu.manufacturer}-${cpu.name}`} target="_blank" rel="noreferrer">{cpu.name}</Link>
 								</th>
 							))}
 						</tr>

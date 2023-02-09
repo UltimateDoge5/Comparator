@@ -243,7 +243,7 @@ const getMarkings = (state: Selection["state"]) => {
 };
 
 // Split the string on the first appearance of the separator
-const splitFirst = (str: string, separator: string) => {
+export const splitFirst = (str: string, separator: string) => {
 	const index = str.indexOf(separator);
 	return [str.substring(0, index), str.substring(index + 1)];
 };
