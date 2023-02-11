@@ -16,11 +16,10 @@ const Cpu = ({ data }: InferGetServerSidePropsType<typeof getServerSideProps>) =
 			<Head>
 				<title>{data.name} | PrimeCPU</title>
 				<meta name="description" content={`Here you'll find all the information you need about the ${data.name} processor.`} />
-				<meta name="viewport" content="width=device-width, initial-scale=1" />
 			</Head>
 			<div className="min-h-[90vh] text-white">
 		        <h1 className="text-3xl">{data.name}</h1>
-				<table className="w-3/5 table-auto [&td]:w-1/2">
+				<table className="w-3/5 table-auto bg-white/20 [&td]:w-1/2">
 					<tbody className="text-xl [&span]:leading-6">
 						<tr>
 							<td className="text-left">Manufacturer</td>

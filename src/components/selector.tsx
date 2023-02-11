@@ -95,7 +95,7 @@ const Selector = ({ setCPU, urlId }: SelectorProps) => {
 
 			// Start a new search
 			searchRef.current = window.setTimeout(async () => {
-				await fetch(`/api/cpu/search?manufacturer=${selection.manufacturer}&model=${tempModel}`)
+				await fetch(`/api/cpu/tip?manufacturer=${selection.manufacturer}&model=${tempModel}`)
 					.catch(() => setSearchResults([]))
 					.then((res) => res?.json())
 					.then((res) => {

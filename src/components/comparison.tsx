@@ -20,7 +20,7 @@ const Comparison = ({ cpus }: { cpus: [CPU, CPU] }) => {
 							<th className="p-2 text-left">Feature</th>
 							{cpus.map((cpu) => (
 								<th className="p-2 text-left underline transition-colors hover:text-white" key={cpu.name}>
-									<Link href={`/cpu/${cpu.manufacturer}-${cpu.name}`} target="_blank" rel="noreferrer">{cpu.name}</Link>
+									<Link href={`/cpu/${cpu.name}`} target="_blank" rel="noreferrer">{cpu.name}</Link>
 								</th>
 							))}
 						</tr>
@@ -106,6 +106,22 @@ const FeatureNames: FeatureList = {
 		title: "Base Frequency",
 		type: "number",
 		unit: "Hz"
+	},
+	MSRP: {
+		title: "Price",
+		type:"custom",
+		parse: (cpus) => (
+			<tr key="MSRP">
+				<td className="p-2">MSRP</td>
+				{cpus.map((cpu, i) => (
+					<td className="p-2" key={cpu.name}>
+						<span className={colorDiff(cpu.MSRP, cpus[1 - i].MSRP)}>
+							{formatNumber(cpu.MSRP, "$")}
+						</span>
+					</td>
+				))}
+			</tr>
+		)
 	},
 	maxFrequency: {
 		title: "Max Frequency",

@@ -6,6 +6,7 @@ import Comparison from "../components/comparison";
 import Selector from "../components/selector";
 import { ToastContainer } from "react-toastify";
 import Footer from "../components/footer";
+import Link from "next/link";
 
 export default function Index() {
 	const [cpus, setCpus] = useState<[CPU | null, CPU | null]>([null, null]);
@@ -16,12 +17,12 @@ export default function Index() {
 			<Head>
 				<title>Compare any CPU you want</title>
 				<meta name="description" content="Comparator lets you compare CPUs and GPUs in an instant!" />
-				<meta name="viewport" content="width=device-width, initial-scale=1" />
-
 				<link rel="canonical" href="https://comparator.pkozak.org" />
 			</Head>
 
-			{/*<h1 className="uppercase absolute top-2 left-2 text-2xl text-white font-bold italic">Comparator</h1>*/}
+			<h1 className="absolute top-2 left-2 text-2xl font-bold uppercase italic text-white">
+				<Link href="/">PrimeCPU</Link>
+			</h1>
 			<main
 				className={`flex ${
 					cpusFulfilled ? "min-h-[130vh]" : "min-h-[90vh]"

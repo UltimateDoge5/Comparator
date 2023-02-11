@@ -1,6 +1,6 @@
 export interface CPU {
 	name: string | null;
-	// MSRP: number | null;
+	MSRP: number | null;
 	lithography: string | null;
 	manufacturer: Manufacturer;
 	cores: Cores;

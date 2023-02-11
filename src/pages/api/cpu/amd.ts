@@ -95,6 +95,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 	cpu = {
 		name: $(".section-title").text().trim(),
 		manufacturer: "amd",
+		MSRP: null,
 		cores: {
 			total: getFloatParameter("# of CPU Cores"),
 			performance: null,
