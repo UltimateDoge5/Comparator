@@ -1,5 +1,5 @@
 import { CPU } from "../../../CPU";
-import { GetServerSideProps, InferGetServerSidePropsType } from "next";
+import type { GetServerSideProps, InferGetServerSidePropsType } from "next";
 import Footer from "../../components/footer";
 import { splitFirst } from "../../components/selector";
 import Head from "next/head";
@@ -88,6 +88,7 @@ export const getServerSideProps: GetServerSideProps<{ data: CPU }> = async ({ re
 
 	const model = req.url?.split("/")[2].toLowerCase();
 	const manufacturer = splitFirst(decodeURI(model), " ")[0];
+	console.log(model, manufacturer);
 
 	if (!manufacturer || !model || !["intel", "amd"].includes(manufacturer)) {
 		return {

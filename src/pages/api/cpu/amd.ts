@@ -124,10 +124,12 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 			: false,
 		pcie: getParameter("PCI Express Revision"),
 		source: `https://www.amd.com${specsLink}`,
-		schemaVer: 1.1,
+		ref:"/cpu/" + model,
+		schemaVer: 1.2,
 	};
 
-	if (process.env.NODE_ENV === "production" || req.query["no-cache"] !== undefined) await redis.set(model, cpu);
+	// if (process.env.NODE_ENV === "production" || req.query["no-cache"] !== undefined)
+	await redis.set(model, cpu);
 	res.status(200).json(cpu);
 };
 

@@ -62,10 +62,10 @@ const RenderComparison: (cpus: [CPU, CPU], list: FeatureList, ...keys: string[])
 						<tr key={key}>
 							<td>{feature.title}</td>
 							<td>
-								<span className={colorDiff(a, b)}>{formatNumber(a, feature.unit || "")}</span>
+								<span className={colorDiff(a, b, feature.reverse === true)}>{feature.prefix === false ? (a ?? "N/A") + (feature?.unit || "") : formatNumber(a, feature.unit || "")}</span>
 							</td>
 							<td>
-								<span className={colorDiff(a, b, true)}>{formatNumber(b, feature.unit || "")}</span>
+								<span className={colorDiff(a, b, feature.reverse !== true)}>{feature.prefix === false ? (b ?? "N/A") + (feature?.unit || "") : formatNumber(b, feature.unit || "")}</span>
 							</td>
 						</tr>
 					);
@@ -96,55 +96,62 @@ const FeatureNames: FeatureList = {
 					</td>
 				))}
 			</tr>
-		)
+		),
 	},
 	threads: {
 		title: "Threads",
-		type: "number"
+		type: "number",
 	},
 	baseFrequency: {
 		title: "Base Frequency",
 		type: "number",
-		unit: "Hz"
+		unit: "Hz",
 	},
-	MSRP: {
-		title: "Price",
-		type:"custom",
-		parse: (cpus) => (
-			<tr key="MSRP">
-				<td className="p-2">MSRP</td>
-				{cpus.map((cpu, i) => (
-					<td className="p-2" key={cpu.name}>
-						<span className={colorDiff(cpu.MSRP, cpus[1 - i].MSRP)}>
-							{formatNumber(cpu.MSRP, "$")}
-						</span>
-					</td>
-				))}
-			</tr>
-		)
-	},
+	// MSRP: {
+	// 	title: "Price",
+	// 	type:"custom",
+	// 	parse: (cpus) => (
+	// 		<tr key="MSRP">
+	// 			<td className="p-2">MSRP</td>
+	// 			{cpus.map((cpu, i) => (
+	// 				<td className="p-2" key={cpu.name}>
+	// 					<span className={colorDiff(cpu.MSRP, cpus[1 - i].MSRP)}>
+	// 						{formatNumber(cpu.MSRP, "$")}
+	// 					</span>
+	// 				</td>
+	// 			))}
+	// 		</tr>
+	// 	)
+	// },
 	maxFrequency: {
 		title: "Max Frequency",
 		type: "number",
-		unit: "Hz"
+		unit: "Hz",
 	},
 	cache: {
 		title: "Cache",
 		type: "number",
-		unit: "B"
+		unit: "B",
 	},
 	tdp: {
 		title: "TDP",
 		type: "number",
-		unit: "W"
+		unit: "W",
 	},
 	lithography: {
 		title: "Lithography",
-		type: "string"
+		type: "string",
+	},
+	MSRP: {
+		title: "Price",
+		type: "number",
+		unit: "$",
+		prefix: false,
+		reverse: true,
 	},
 	launchDate: {
 		title: "Launch Date",
-		type: "string"
+		type: "string",
 	},
 	memory: {
 		types: {
@@ -165,13 +172,13 @@ const FeatureNames: FeatureList = {
 						<MemoryComparison cpus={cpus} />
 					</tr>
 				</>
-			)
+			),
 		},
 		maxSize: {
 			title: "Max Size",
 			type: "number",
-			unit: "B"
-		}
+			unit: "B",
+		},
 	},
 	graphics: {
 		title: "Graphics",
@@ -188,8 +195,8 @@ const FeatureNames: FeatureList = {
 				</tr>
 				{GraphicsComparison({ cpus })}
 			</>
-		)
-	}
+		),
+	},
 };
 
 type FeatureList = {
@@ -197,7 +204,8 @@ type FeatureList = {
 };
 
 type Feature = { title: string } & (
-	| { type: "number"; unit?: string }
+	// Prefix is whether is to add K, M, G, etc. to the number
+	| { type: "number"; unit?: string, prefix?: boolean, reverse?: boolean }
 	| { type: "string" }
 	| { type: "custom"; card?: true; parse: (cpus: CPU[]) => JSX.Element }
 	);
@@ -261,7 +269,7 @@ const GraphicsComparison = ({ cpus }: { cpus: CPU[] }) => {
 							className={colorDiff(
 								(cpus[0].graphics as Graphics)?.baseFrequency,
 								(cpus[1].graphics as Graphics)?.baseFrequency,
-								i === 1
+								i === 1,
 							)}
 						>
 							{formatNumber(cpu.graphics.baseFrequency, "Hz")}
@@ -270,7 +278,7 @@ const GraphicsComparison = ({ cpus }: { cpus: CPU[] }) => {
 						<td key={cpu.name} rowSpan={3}>
 							No graphics included
 						</td>
-					)
+					),
 				)}
 			</tr>
 			<tr>
@@ -283,12 +291,12 @@ const GraphicsComparison = ({ cpus }: { cpus: CPU[] }) => {
 								className={colorDiff(
 									(cpus[0].graphics as Graphics)?.maxFrequency,
 									(cpus[1].graphics as Graphics)?.maxFrequency,
-									i === 1
+									i === 1,
 								)}
 							>
 								{formatNumber(cpu.graphics.maxFrequency, "Hz")}
 							</td>
-						)
+						),
 				)}
 			</tr>
 			<tr>
@@ -301,12 +309,12 @@ const GraphicsComparison = ({ cpus }: { cpus: CPU[] }) => {
 								className={colorDiff(
 									(cpus[0].graphics as Graphics)?.displays,
 									(cpus[1].graphics as Graphics)?.displays,
-									i === 1
+									i === 1,
 								)}
 							>
 								{cpu.graphics.displays || "Unknown"}
 							</td>
-						)
+						),
 				)}
 			</tr>
 		</>

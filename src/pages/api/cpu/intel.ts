@@ -34,6 +34,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 	let cpu: CPU | null = req.query["no-cache"] === undefined ? await redis.get<CPU>(`intel-${model}`) : null;
 
 	if (cpu !== null && cpu.schemaVer >= parseFloat(process.env.MIN_SCHEMA_VERSION || "1.1")) {
+		cpu.ref = "/cpu/intel " + model;
 		res.json(cpu);
 		return;
 	}
@@ -142,11 +143,12 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 			},
 		pcie: getParameter("PCI Express Revision"),
 		source: url,
-		schemaVer: 1.1,
+		ref: "/cpu/" + model,
+		schemaVer: 1.2,
 	};
 
 	// if (process.env.NODE_ENV === "production" || req.query["no-cache"] !== undefined)
-		await redis.set(`intel-${model}`, cpu);
+	await redis.set(`intel-${model}`, cpu);
 	res.status(200).json(cpu);
 };
 

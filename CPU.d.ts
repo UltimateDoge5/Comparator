@@ -15,6 +15,8 @@ export interface CPU {
 	pcie: string | null;
 	source: string;
 	schemaVer: number;
+	// Url to the cpu page
+	ref:string;
 }
 
 interface Cores {
