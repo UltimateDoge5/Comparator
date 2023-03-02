@@ -1,6 +1,7 @@
 export interface CPU {
 	name: string | null;
 	MSRP: number | null;
+	marketSegment: MarketType | null;
 	lithography: string | null;
 	manufacturer: Manufacturer;
 	cores: Cores;
@@ -16,7 +17,7 @@ export interface CPU {
 	source: string;
 	schemaVer: number;
 	// Url to the cpu page
-	ref:string;
+	ref: string;
 }
 
 interface Cores {
@@ -29,7 +30,7 @@ interface Memory {
 	types: ({
 		speed: number;
 		type: string;
-	} | null)[]
+	} | null)[];
 	maxSize: number | null;
 }
 
@@ -39,9 +40,11 @@ export interface Graphics {
 	displays: number | null;
 }
 
+export type MarketType = "desktop" | "embedded" | "mobile";
+
 export const Manufacturer = {
 	INTEL: "intel",
-	AMD: "amd"
+	AMD: "amd",
 } as const;
 
 export type Manufacturer = typeof Manufacturer[keyof typeof Manufacturer];

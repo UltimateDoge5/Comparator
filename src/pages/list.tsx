@@ -6,6 +6,7 @@ import type { CPU, Manufacturer } from "../../CPU";
 import Link from "next/link";
 import { Fragment, useState } from "react";
 import { ToastContainer, toast } from "react-toastify";
+import { capitalize } from "../util/formatting";
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -85,13 +86,19 @@ const CPUItem = ({ model, manufacturer }: { model: string, manufacturer: Manufac
 			className={`grid min-h-[4rem] w-1/2 grid-cols-6 grid-rows-1 items-center gap-6 rounded-md border border-slate-600/50 bg-white/5 p-4
 			 transition-colors hover:border-white/50 hover:bg-slate-600/50 ${getManufacturerColor(manufacturer)} shadow-md`}
 		>
-			<h1 className="col-span-4 text-2xl font-medium">
+			<h1 className="col-span-3 text-2xl font-medium">
 				<Link href={data?.ref || `/cpu/${model}`}>{model}</Link>
 			</h1>
+
+			<span className={isLoading || error ? "flex h-6 w-24 animate-pulse items-center rounded-md bg-gray-800 text-transparent" : ""}>
+				{capitalize(data?.marketSegment || "Unknown market")}
+			</span>
 			<span
 				style={{ gridArea: "1 / 5 / 2 / 6" }}
 				className={isLoading || error ? "flex h-6 w-24 animate-pulse items-center rounded-md bg-gray-800 text-transparent" : ""}
-			>{data?.launchDate || ""}</span>
+			>
+				{data?.launchDate || ""}
+			</span>
 			<span
 				style={{ gridArea: "1 / 6 / 2 / 7" }}
 				className={isLoading || error ? "flex  h-6 animate-pulse items-center rounded-md bg-gray-800 text-transparent" : ""}

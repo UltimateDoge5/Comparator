@@ -6,7 +6,7 @@ import type { CPU } from "../../../../CPU";
 import { Redis } from "@upstash/redis";
 import * as https from "https";
 import type { Memory } from "../../../../CPU";
-import { normaliseIntel } from "../../../util/formatting";
+import { normaliseIntel, normaliseMarket } from "../../../util/formatting";
 
 let $: CheerioAPI;
 
@@ -31,7 +31,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
 	model = normaliseIntel(model);
 
-	let cpu: CPU | null = req.query["no-cache"] === undefined ? await redis.get<CPU>(`intel-${model}`) : null;
+	let cpu: CPU | null = req.query["no-cache"] === undefined ? (await redis.json.get(`intel-${model}`,"$"))[0] : null;
 
 	if (cpu !== null && cpu.schemaVer >= parseFloat(process.env.MIN_SCHEMA_VERSION || "1.1")) {
 		cpu.ref = "/cpu/intel " + model;
@@ -54,7 +54,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 		}),
 	});
 
-	if (query.status === 419 || query.status === 401) {
+	if (!query.ok) {
 		const token = await refreshToken();
 		query = await fetch("https://platform.cloud.coveo.com/rest/search/v2?f:@tabfilter=[Products]", {
 			method: "POST",
@@ -115,6 +115,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 		name: cpuName,
 		manufacturer: "intel",
 		MSRP: parseFloat((getParameter("Recommended Customer Price") ?? "null").replace("$", "")),
+		marketSegment: normaliseMarket(getParameter("Vertical Segment")),
 		lithography: getParameter("Lithography"),
 		cache: getFloatParameter("Cache"),
 		cores: {
@@ -143,12 +144,12 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 			},
 		pcie: getParameter("PCI Express Revision"),
 		source: url,
-		ref: "/cpu/" + model,
+		ref: "/cpu/intel " + model,
 		schemaVer: 1.2,
 	};
 
 	// if (process.env.NODE_ENV === "production" || req.query["no-cache"] !== undefined)
-	await redis.set(`intel-${model}`, cpu);
+	await redis.json.set(`intel-${model}`, "$", cpu as Record<string, any>);
 	res.status(200).json(cpu);
 };
 

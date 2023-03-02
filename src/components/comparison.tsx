@@ -107,22 +107,6 @@ const FeatureNames: FeatureList = {
 		type: "number",
 		unit: "Hz",
 	},
-	// MSRP: {
-	// 	title: "Price",
-	// 	type:"custom",
-	// 	parse: (cpus) => (
-	// 		<tr key="MSRP">
-	// 			<td className="p-2">MSRP</td>
-	// 			{cpus.map((cpu, i) => (
-	// 				<td className="p-2" key={cpu.name}>
-	// 					<span className={colorDiff(cpu.MSRP, cpus[1 - i].MSRP)}>
-	// 						{formatNumber(cpu.MSRP, "$")}
-	// 					</span>
-	// 				</td>
-	// 			))}
-	// 		</tr>
-	// 	)
-	// },
 	maxFrequency: {
 		title: "Max Frequency",
 		type: "number",
@@ -142,6 +126,11 @@ const FeatureNames: FeatureList = {
 		title: "Lithography",
 		type: "string",
 	},
+	// marketSegment:{
+	// 	title: "Market Segment",
+	// 	type: "string",
+	// },
+	// TODO: Add custom display for market segment and msrp - no price for mobile and embedded cpus
 	MSRP: {
 		title: "Price",
 		type: "number",

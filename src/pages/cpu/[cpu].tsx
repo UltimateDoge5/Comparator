@@ -1,4 +1,4 @@
-import { CPU } from "../../../CPU";
+import type { CPU } from "../../../CPU";
 import type { GetServerSideProps, InferGetServerSidePropsType } from "next";
 import Footer from "../../components/footer";
 import { splitFirst } from "../../components/selector";
@@ -74,7 +74,7 @@ const Cores = ({ cores }: { cores: CPU["cores"] }) => {
 	);
 };
 
-export const getServerSideProps: GetServerSideProps<{ data: CPU }> = async ({ req, res }) => {
+export const getServerSideProps: GetServerSideProps<{ data: CPU }> = async ({ req }) => {
 	// res.setHeader(
 	// 	"Cache-Control",
 	// 	"public, s-maxage=3600, stale-while-revalidate=86400",
@@ -88,7 +88,7 @@ export const getServerSideProps: GetServerSideProps<{ data: CPU }> = async ({ re
 
 	const model = req.url?.split("/")[2].toLowerCase();
 	const manufacturer = splitFirst(decodeURI(model), " ")[0];
-	console.log(model, manufacturer);
+	// console.log(model, manufacturer);
 
 	if (!manufacturer || !model || !["intel", "amd"].includes(manufacturer)) {
 		return {
