@@ -31,7 +31,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
 	model = normaliseIntel(model);
 
-	let cpu: CPU | null = req.query["no-cache"] === undefined ? (await redis.json.get(`intel-${model}`,"$"))[0] : null;
+	let cpu: CPU | null = req.query["no-cache"] === undefined ? (await redis.json.get(`intel-${model}`,"$"))?.[0] : null;
 
 	if (cpu !== null && cpu.schemaVer >= parseFloat(process.env.MIN_SCHEMA_VERSION || "1.1")) {
 		cpu.ref = "/cpu/intel " + model;

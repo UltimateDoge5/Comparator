@@ -1,4 +1,4 @@
-import { MarketType } from "../../CPU";
+import type { MarketType } from "../../CPU";
 
 export const formatNumber = (num: number | null, unit: string) => {
 	if (num === null) return "N/A " + unit;
@@ -29,10 +29,13 @@ export const normaliseMarket = (market: string | null): MarketType | null => {
 		case "desktop": // Intel
 		case "boxed processor": // AMD
 			return "desktop";
+		case "laptop": // AMD
 		case "mobile": // Intel
 			return "mobile";
 		case "embedded": // Intel
 			return "embedded";
+		case "server":
+			return "server";
 		default:
 			return null;
 	}

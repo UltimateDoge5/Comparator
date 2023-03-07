@@ -26,7 +26,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 	if (!model.startsWith("amd-")) model = `amd-${model}`;
 
 	// Get the cpu from redis
-	let cpu: CPU | null = req.query["no-cache"] === undefined ? (await redis.json.get(model, "$"))[0] : null;
+	let cpu: CPU | null = req.query["no-cache"] === undefined ? (await redis.json.get(model, "$"))?.[0] : null;
 	if (cpu !== null && cpu?.schemaVer >= parseFloat(process.env.MIN_SCHEMA_VERSION || "1.1")) {
 		res.json(cpu);
 		return;
@@ -162,6 +162,7 @@ const Prefixes = {
 };
 
 const getLaunchDate = (string: string) => {
+	if (!string) return "Unknown";
 	if (/Q\d \d{4}/.test(string)) return string;
 
 	const date = new Date(string);

@@ -4,8 +4,8 @@ import Footer from "../components/footer";
 import Head from "next/head";
 import type { CPU, Manufacturer } from "../../CPU";
 import Link from "next/link";
-import { Fragment, useState } from "react";
-import { ToastContainer, toast } from "react-toastify";
+import { Fragment, useEffect, useState } from "react";
+import { ToastContainer } from "react-toastify";
 import { capitalize } from "../util/formatting";
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
@@ -39,18 +39,6 @@ const List = () => {
 				/>
 				<div className="flex w-full flex-col items-center gap-6">
 					{data?.map((names, i) => {
-						// return (cpu.map((cpu) => (
-						// 	<div
-						// 		key={cpu.name}
-						// 		className={`grid min-h-[4rem] w-1/2 grid-cols-6 grid-rows-1 items-center gap-6 rounded-md border border-slate-600/50 bg-white/5 p-4 transition-colors hover:border-white/50 hover:bg-slate-600/50 ${getManufacturerColor(cpu.manufacturer)} shadow-md`}
-						// 	>
-						// 		<h1 className="col-span-4 text-2xl">
-						// 			<Link href={cpu.ref || `/cpu/${cpu.name}`}>{cpu.name}</Link>
-						// 		</h1>
-						// 		<span style={{ gridArea: "1 / 5 / 2 / 6" }}>{cpu.launchDate}</span>
-						// 		<span style={{ gridArea: "1 / 6 / 2 / 7" }}>{cpu.MSRP ? `${cpu.MSRP}$` : "Unavailable"}</span>
-						// 	</div>
-						// )));
 						return (
 							<Fragment key={i}>
 								{names.map((cpu) => (
@@ -78,8 +66,25 @@ const List = () => {
 };
 
 const CPUItem = ({ model, manufacturer }: { model: string, manufacturer: Manufacturer }) => {
-	const { data, error, isLoading } = useSWR<CPU>(`/api/cpu/${manufacturer}?model=${model}`, fetcher);
-	
+	const { data, error, isLoading, mutate } = useSWR<CPU>(`/api/cpu/${manufacturer}?model=${model}`, fetcher, {});
+	const [loadingPrice, setLoadingPrice] = useState(false);
+
+	useEffect(() => {
+		(async () => {
+			if (data?.manufacturer === "amd" && data.marketSegment === "desktop" && data?.MSRP === null) {
+				setLoadingPrice(true);
+				const res = await fetch(`/api/cpu/getPrice?model=${model}`);
+
+				if (res.ok) {
+					const price = await res.json();
+					await mutate({ ...data, MSRP: price });
+				}
+
+				setLoadingPrice(false);
+			}
+		})();
+	}, [data]);
+
 	return (
 		<div
 			key={model}
@@ -101,7 +106,7 @@ const CPUItem = ({ model, manufacturer }: { model: string, manufacturer: Manufac
 			</span>
 			<span
 				style={{ gridArea: "1 / 6 / 2 / 7" }}
-				className={isLoading || error ? "flex  h-6 animate-pulse items-center rounded-md bg-gray-800 text-transparent" : ""}
+				className={isLoading || loadingPrice || error ? "flex  h-6 animate-pulse items-center rounded-md bg-gray-800 text-transparent" : ""}
 			>
 				{data?.MSRP ? `${data.MSRP}$` : "Unavailable"}
 			</span>

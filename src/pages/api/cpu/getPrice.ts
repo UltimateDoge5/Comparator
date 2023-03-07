@@ -18,7 +18,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 		return;
 	}
 
-	model = model.toLowerCase().replace(/-/g, " ").replace("amd", "").trim();
+	model = model.toLowerCase().replace(/-/g, " ").replace("amd", "").replace("™", "").trim();
 
 	// Get the price from the shop website
 	const response = await fetch(`https://${process.env.BROWSERLESS_URL}/scrape?token=${process.env.BROWSERLESS_TOKEN}`, {
@@ -45,15 +45,20 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 	}
 
 	const data = await response.json();
+
+	if (data.data?.[0]?.results?.length === 0) {
+		res.status(404).send("No price found");
+		return;
+	}
+
 	//There normally isn't a dollar sign but amd works in mysterious ways
-	const price = parseFloat(data.data[0].results[0].text.replace("$", ""));
+	const price = parseFloat(data.data?.[0]?.results?.[0]?.text.replace("$", ""));
 
 	if (isNaN(price)) {
 		res.status(404).send("No price found");
 		return;
 	}
 
-	//TODO: This doesnt work for some reason
 	await redis.json.set(`amd-${model.replace(/ /g, "-").toLowerCase()}`, "$.MSRP", price);
 	return res.status(200).json(price);
 };

@@ -10,11 +10,11 @@ export const config = {
 };
 
 const Cpu = ({ data }: InferGetServerSidePropsType<typeof getServerSideProps>) => {
-
+	const title = `${data.name} | PrimeCPU`;
 	return (
 		<>
 			<Head>
-				<title>{data.name} | PrimeCPU</title>
+				<title>{title}</title>
 				<meta name="description" content={`Here you'll find all the information you need about the ${data.name} processor.`} />
 			</Head>
 			<div className="min-h-[90vh] text-white">
@@ -86,15 +86,22 @@ export const getServerSideProps: GetServerSideProps<{ data: CPU }> = async ({ re
 		};
 	}
 
-	const model = req.url?.split("/")[2].toLowerCase();
+
+
+	let model = decodeURI(req.url.replaceAll("-"," ")?.split("/")[2].toLowerCase());
 	const manufacturer = splitFirst(decodeURI(model), " ")[0];
-	// console.log(model, manufacturer);
+	console.log(model, manufacturer);
 
 	if (!manufacturer || !model || !["intel", "amd"].includes(manufacturer)) {
 		return {
 			notFound: true,
 		};
 	}
+
+	if (manufacturer === "amd") {
+		model = model.replace("™", "");
+	}
+
 
 	const protocol = process.env.NODE_ENV === "production" ? "https" : "http";
 	const response = await fetch(`${protocol}://${req.headers.host}/api/cpu/${manufacturer}/?model=${model}`);

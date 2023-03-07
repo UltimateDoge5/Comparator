@@ -40,7 +40,7 @@ export interface Graphics {
 	displays: number | null;
 }
 
-export type MarketType = "desktop" | "embedded" | "mobile";
+export type MarketType = "desktop" | "embedded" | "mobile" | "server";
 
 export const Manufacturer = {
 	INTEL: "intel",

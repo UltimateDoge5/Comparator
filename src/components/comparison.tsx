@@ -1,11 +1,41 @@
 import type { CPU, Graphics } from "../../CPU";
-import { Fragment } from "react";
+import { Fragment, useEffect } from "react";
 import { domAnimation, LazyMotion, m } from "framer-motion";
-import { colorDiff, formatNumber } from "../util/formatting";
+import { capitalize, colorDiff, formatNumber } from "../util/formatting";
+import { toast } from "react-toastify";
 import Link from "next/link";
 
 // Compare two CPUs
 const Comparison = ({ cpus }: { cpus: [CPU, CPU] }) => {
+	useEffect(() => {
+		(async () => {
+			let i = 0;
+			for (const cpu of cpus) {
+				if (cpu.marketSegment === "desktop" && cpu.MSRP === null && cpu.manufacturer === "amd") {
+					const $toast = toast.loading("Loading price for " + cpu.name + "...");
+					const res = await fetch(`/api/cpu/getPrice?model=${cpu.name}`);
+
+					if (res.ok) {
+						const price = await res.json();
+						(document.querySelector("#price-" + i) as HTMLSpanElement).innerHTML = price + "$";
+						toast.update($toast, {
+							render: "Price for " + cpu.name + " loaded",
+							type: "success",
+							autoClose: 2500,
+						});
+					} else {
+						toast.update($toast, {
+							render: "Failed to load price for " + cpu.name,
+							type: "error",
+							autoClose: 2500,
+						});
+					}
+				}
+				i++;
+			}
+		})();
+	}, [cpus]);
+
 	return (
 		<LazyMotion features={domAnimation}>
 			<m.div
@@ -126,17 +156,49 @@ const FeatureNames: FeatureList = {
 		title: "Lithography",
 		type: "string",
 	},
-	// marketSegment:{
-	// 	title: "Market Segment",
-	// 	type: "string",
-	// },
-	// TODO: Add custom display for market segment and msrp - no price for mobile and embedded cpus
+	marketSegment: {
+		title: "Market Segment",
+		type: "custom",
+		parse: (cpus) => (
+			<tr key="marketSegment">
+				<td className="p-2">Market Segment</td>
+				{cpus.map((cpu) => {
+						const hidePrice = cpu.marketSegment == "embedded" || (cpu.marketSegment == "mobile" && cpu.manufacturer == "amd");
+						return (
+							<td
+								className={`p-2 ${hidePrice ? "text-center" : ""}`}
+								key={cpu.name}
+								rowSpan={hidePrice ? 2 : 1}
+							>
+								{capitalize(cpu.marketSegment || "N/A")}
+							</td>
+						);
+					},
+				)}
+			</tr>
+		),
+	},
 	MSRP: {
 		title: "Price",
-		type: "number",
-		unit: "$",
-		prefix: false,
-		reverse: true,
+		type: "custom",
+		parse: (cpus) => (
+			<tr key="MSRP">
+				<td className="p-2">Price</td>
+				{cpus.map((cpu, i) => {
+						const hidePrice = cpu.marketSegment == "embedded" || (cpu.marketSegment == "mobile" && cpu.manufacturer == "amd");
+						if (hidePrice) return <></>;
+
+						return (
+							<td className="p-2" key={cpu.name}>
+								<span className={colorDiff(cpu.MSRP, cpus[1 - i].MSRP, true)} id={"price-" + i}>
+	 						        {formatNumber(cpu.MSRP, "$")}
+								</span>
+							</td>
+						);
+					},
+				)}
+			</tr>
+		),
 	},
 	launchDate: {
 		title: "Launch Date",
