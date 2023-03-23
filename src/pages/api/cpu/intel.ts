@@ -31,9 +31,9 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
 	model = normaliseIntel(model);
 
-	let cpu: CPU | null = req.query["no-cache"] === undefined ? (await redis.json.get(`intel-${model}`,"$"))?.[0] : null;
+	let cpu: CPU | null = req.query["no-cache"] === undefined ? (await redis.json.get(`intel-${model}`, "$"))?.[0] : null;
 
-	if (cpu !== null && cpu.schemaVer >= parseFloat(process.env.MIN_SCHEMA_VERSION || "1.1")) {
+	if (cpu !== null && cpu?.schemaVer >= parseFloat(process.env.MIN_SCHEMA_VERSION || "1.1")) {
 		cpu.ref = "/cpu/intel " + model;
 		res.json(cpu);
 		return;
@@ -114,7 +114,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 	cpu = {
 		name: cpuName,
 		manufacturer: "intel",
-		MSRP: parseFloat((getParameter("Recommended Customer Price") ?? "null").replace("$", "")),
+		// MSRP: parseFloat((getParameter("Recommended Customer Price") ?? "null").replace("$", "")),
+		MSRP: getPrice(getParameter("Recommended Customer Price")),
 		marketSegment: normaliseMarket(getParameter("Vertical Segment")),
 		lithography: getParameter("Lithography"),
 		cache: getFloatParameter("Cache"),
@@ -145,6 +146,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 		pcie: getParameter("PCI Express Revision"),
 		source: url,
 		ref: "/cpu/intel " + model,
+		scrapedAt: new Date(),
 		schemaVer: 1.2,
 	};
 
@@ -209,6 +211,12 @@ const getMemoryDetails = (): Memory["types"] => {
 			return { type: type, speed: parseInt(speed.split("/").pop() as string) };
 		})
 		.filter((mem) => mem?.speed !== null || mem !== null);
+};
+
+const getPrice = (s: string | null): number | null => {
+	if (s === null) return s;
+	s = (s.split("-").pop() as string).replace("$", "");
+	return parseFloat(s);
 };
 
 export const refreshToken = async () => {

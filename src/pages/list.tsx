@@ -7,6 +7,7 @@ import Link from "next/link";
 import { Fragment, useEffect, useState } from "react";
 import { ToastContainer } from "react-toastify";
 import { capitalize } from "../util/formatting";
+import Navbar from "../components/navbar";
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -25,10 +26,8 @@ const List = () => {
 				<title>Search for CPUs | PrimeCPU</title>
 				<meta name="description" content="Search for CPUs" />
 			</Head>
-			<h1 className="absolute top-2 left-2 text-2xl font-bold uppercase italic text-white">
-				<Link href="/">PrimeCPU</Link>
-			</h1>
-			<div className="mt-12 flex min-h-[100vh] w-full flex-col items-center gap-6 text-white">
+			<Navbar />
+			<div className="mt-6 mb-8 flex min-h-[100vh] w-full flex-col items-center gap-6 text-white">
 				<h1 className="text-4xl">Search for CPUs</h1>
 				<input
 					type="search"
@@ -88,8 +87,8 @@ const CPUItem = ({ model, manufacturer }: { model: string, manufacturer: Manufac
 	return (
 		<div
 			key={model}
-			className={`grid min-h-[4rem] w-1/2 grid-cols-6 grid-rows-1 items-center gap-6 rounded-md border border-slate-600/50 bg-white/5 p-4
-			 transition-colors hover:border-white/50 hover:bg-slate-600/50 ${getManufacturerColor(manufacturer)} shadow-md`}
+			className={`grid min-h-[4rem] w-3/4 grid-cols-6 grid-rows-1 items-center gap-6 rounded-md border border-slate-600/50 bg-white/5 p-4 transition-colors
+			 hover:border-white/50 hover:bg-slate-600/50 lg:w-1/2 ${getManufacturerColor(manufacturer)} shadow-md`}
 		>
 			<h1 className="col-span-3 text-2xl font-medium">
 				<Link href={data?.ref || `/cpu/${model}`}>{model}</Link>

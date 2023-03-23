@@ -351,8 +351,6 @@ export const AMD_PRODUCTS = [
  *  Scraped list of all Intel core cpus from Wikipedia.
  */
 export const INTEL_PRODUCTS = [
-	"Core i9-9990XE",
-	"Core i9-9900K",
 	"Core i9-13980HX",
 	"Core i9-13950HX",
 	"Core i9-13900HX",
@@ -370,6 +368,8 @@ export const INTEL_PRODUCTS = [
 	"Core i9-10885H",
 	"Core i9-9980HK",
 	"Core i9-9880H",
+	"Core i9-9990XE",
+	"Core i9-9900K",
 	"Core i9-8950HK",
 	"Core i9-13900TE",
 	"Core i9-13900E",

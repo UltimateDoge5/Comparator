@@ -126,6 +126,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 		pcie: getParameter("PCI Express Revision"),
 		source: `https://www.amd.com${specsLink}`,
 		ref: "/cpu/" + model,
+		scrapedAt: new Date(),
 		schemaVer: 1.2,
 	};
 

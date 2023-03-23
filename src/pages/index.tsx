@@ -7,6 +7,7 @@ import Selector from "../components/selector";
 import { ToastContainer } from "react-toastify";
 import Footer from "../components/footer";
 import Link from "next/link";
+import Navbar from "../components/navbar";
 
 export default function Index() {
 	const [cpus, setCpus] = useState<[CPU | null, CPU | null]>([null, null]);
@@ -20,9 +21,7 @@ export default function Index() {
 				<link rel="canonical" href="https://comparator.pkozak.org" />
 			</Head>
 
-			<h1 className="absolute top-2 left-2 text-2xl font-bold uppercase italic text-white">
-				<Link href="/">PrimeCPU</Link>
-			</h1>
+			<Navbar/>
 			<main
 				className={`flex ${
 					cpusFulfilled ? "min-h-[130vh]" : "min-h-[90vh]"

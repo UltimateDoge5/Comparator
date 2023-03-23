@@ -15,7 +15,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 		.slice((parseInt(p)) * 5, (parseInt(p)) * 5 + 5);
 
 	res.status(200).json(names.map((name) => ({
-		model: name,
+		model: name.replace("amd", "AMD").replace("ryzen", "Ryzen"),
 		manufacturer: name.includes("amd") ? "amd" : "intel",
 	})));
 };
