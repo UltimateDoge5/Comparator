@@ -6,6 +6,7 @@ import elementSelector from "../../../util/selectors";
 import { Redis } from "@upstash/redis";
 import { AMD_PRODUCTS } from "../../../util/products";
 import https from "https";
+import { normaliseMarket } from "../../../util/formatting";
 
 let $: CheerioAPI;
 
@@ -25,9 +26,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 	if (!model.startsWith("amd-")) model = `amd-${model}`;
 
 	// Get the cpu from redis
-	let cpu: CPU | null = req.query["no-cache"] === undefined ? await redis.get(model) : null;
-
-	if (cpu !== null && cpu.schemaVer >= parseFloat(process.env.MIN_SCHEMA_VERSION || "1.1")) {
+	let cpu: CPU | null = req.query["no-cache"] === undefined ? (await redis.json.get(model, "$"))?.[0] : null;
+	if (cpu !== null && cpu?.schemaVer >= parseFloat(process.env.MIN_SCHEMA_VERSION || "1.1")) {
 		res.json(cpu);
 		return;
 	}
@@ -95,6 +95,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 	cpu = {
 		name: $(".section-title").text().trim(),
 		manufacturer: "amd",
+		MSRP: null,
+		marketSegment: normaliseMarket(getParameter("Platform")),
 		cores: {
 			total: getFloatParameter("# of CPU Cores"),
 			performance: null,
@@ -123,10 +125,14 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 			: false,
 		pcie: getParameter("PCI Express Revision"),
 		source: `https://www.amd.com${specsLink}`,
-		schemaVer: 1.1,
+		ref: "/cpu/" + model,
+		scrapedAt: new Date(),
+		schemaVer: 1.2,
 	};
 
-	if (process.env.NODE_ENV === "production" || req.query["no-cache"] !== undefined) await redis.set(model, cpu);
+	// if (process.env.NODE_ENV === "production" || req.query["no-cache"] !== undefined)
+	// amd is appended to the string
+	await redis.json.set(model, "$", cpu as Record<string, any>);
 	res.status(200).json(cpu);
 };
 
@@ -157,6 +163,7 @@ const Prefixes = {
 };
 
 const getLaunchDate = (string: string) => {
+	if (!string) return "Unknown";
 	if (/Q\d \d{4}/.test(string)) return string;
 
 	const date = new Date(string);

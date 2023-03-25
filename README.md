@@ -46,6 +46,9 @@ my own instance of
 [Browserless](https://browserless.io) and using it to fetch the data. This is not ideal and adds lots of delay (
 approximately 6-7 seconds), but that's better than nothing.
 
+Overall the AMD data is not as accurate and is very unreliable. For example, they can have two release dates for the
+same cpu on one page.
+
 ### Tech stack
 
 - [Next.js](https://nextjs.org/)

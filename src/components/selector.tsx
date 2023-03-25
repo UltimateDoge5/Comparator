@@ -95,7 +95,7 @@ const Selector = ({ setCPU, urlId }: SelectorProps) => {
 
 			// Start a new search
 			searchRef.current = window.setTimeout(async () => {
-				await fetch(`/api/cpu/search?manufacturer=${selection.manufacturer}&model=${tempModel}`)
+				await fetch(`/api/cpu/tip?manufacturer=${selection.manufacturer}&model=${tempModel}`)
 					.catch(() => setSearchResults([]))
 					.then((res) => res?.json())
 					.then((res) => {
@@ -243,7 +243,7 @@ const getMarkings = (state: Selection["state"]) => {
 };
 
 // Split the string on the first appearance of the separator
-const splitFirst = (str: string, separator: string) => {
+export const splitFirst = (str: string, separator: string) => {
 	const index = str.indexOf(separator);
 	return [str.substring(0, index), str.substring(index + 1)];
 };

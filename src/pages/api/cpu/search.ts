@@ -2,35 +2,22 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { AMD_PRODUCTS, INTEL_PRODUCTS } from "../../../util/products";
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
-	const { manufacturer } = req.query;
-	let { model } = req.query;
+	// q - query
+	// p - page
+	let { q, p } = req.query as { q: string, p: string };
 
-	if (!model || typeof model !== "string" || model.length < 3) {
-		res.status(400).send("Missing model");
-		return;
-	}
+	p = parseInt(p) < 0 ? "0" : p;
+	if (q === undefined) q = "";
 
-	// Get 3 amd results close to the given model
-	if (manufacturer === "amd") {
-		model = model.trim().replace(/ /g, "-").toLowerCase();
-		if (!model.startsWith("amd-")) model = `amd-${model}`;
+	// Get 5 cpus matching the query
+	const names = (INTEL_PRODUCTS.concat(AMD_PRODUCTS.map((p => (p.split("/").pop() as string).toLowerCase().replaceAll("-", " ")))))
+		.filter((cpu) => cpu.toLowerCase().includes(q.toLowerCase()))
+		.slice((parseInt(p)) * 5, (parseInt(p)) * 5 + 5);
 
-		const results = AMD_PRODUCTS.map((p) => p.split("/").pop() as string)
-			.filter((p) => p?.includes(model as string))
-			.slice(0, 3)
-			.map((p) => p?.replace(/-/g, " ").replace("amd", "").replace("r", "R").trim());
-
-		res.json(results);
-		return;
-	} else if (manufacturer === "intel") {
-		// If there is no "core" in the string or signs of it, prepend it
-		if (!/[core]/gi.test(model.trim().toLowerCase())) model = "core " + model;
-		if(/i\d /i.test(model.trim().toLowerCase())) model = model.trim().replace(/(i\d) /i, "$1-");
-		res.json(INTEL_PRODUCTS.filter((item) => item.toLowerCase().includes(model as string)).slice(0, 3));
-		return;
-	}
-
-	res.status(400).send("Unknown manufacturer");
+	res.status(200).json(names.map((name) => ({
+		model: name.replace("amd", "AMD").replace("ryzen", "Ryzen"),
+		manufacturer: name.includes("amd") ? "amd" : "intel",
+	})));
 };
 
 export default handler;

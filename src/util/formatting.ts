@@ -1,3 +1,5 @@
+import type { MarketType } from "../../CPU";
+
 export const formatNumber = (num: number | null, unit: string) => {
 	if (num === null) return "N/A " + unit;
 
@@ -12,3 +14,31 @@ export const colorDiff = (a: number | null, b: number | null, invert = false) =>
 	if ((a === null || a === undefined) || (b === null || b === undefined)) return "text-yellow-500";
 	return (invert ? b > a : a > b) ? "text-green-500" : "text-red-500";
 };
+
+export const normaliseIntel = (model: string) => {
+	model = model.trim().toLowerCase();
+	// if (!/[core]/gi.test(model)) model = "core " + model;
+	if (/i\d /i.test(model)) model = model.trim().replace(/(i\d) /i, "$1-");
+
+	return model;
+};
+
+export const normaliseMarket = (market: string | null): MarketType | null => {
+	if (market === null) return null;
+	switch (market.toLowerCase()) {
+		case "desktop": // Intel
+		case "boxed processor": // AMD
+			return "desktop";
+		case "laptop": // AMD
+		case "mobile": // Intel
+			return "mobile";
+		case "embedded": // Intel
+			return "embedded";
+		case "server":
+			return "server";
+		default:
+			return null;
+	}
+};
+
+export const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1);

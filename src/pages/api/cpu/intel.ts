@@ -6,6 +6,7 @@ import type { CPU } from "../../../../CPU";
 import { Redis } from "@upstash/redis";
 import * as https from "https";
 import type { Memory } from "../../../../CPU";
+import { normaliseIntel, normaliseMarket } from "../../../util/formatting";
 
 let $: CheerioAPI;
 
@@ -14,7 +15,7 @@ const redis = Redis.fromEnv({
 });
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
-	const { model } = req.query;
+	let { model } = req.query;
 
 	if (!model || typeof model !== "string" || model.length < 3) {
 		res.status(400).send("Missing model");
@@ -28,17 +29,17 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 		return;
 	}
 
-	let cpu: CPU | null =
-		req.query["no-cache"] === undefined || process.env.NODE_ENV !== "development"
-			? await redis.get(`intel-${model}`)
-			: null;
+	model = normaliseIntel(model);
 
-	if (cpu !== null && cpu.schemaVer >= parseFloat(process.env.MIN_SCHEMA_VERSION || "1.1")) {
+	let cpu: CPU | null = req.query["no-cache"] === undefined ? (await redis.json.get(`intel-${model}`, "$"))?.[0] : null;
+
+	if (cpu !== null && cpu?.schemaVer >= parseFloat(process.env.MIN_SCHEMA_VERSION || "1.1")) {
+		cpu.ref = "/cpu/intel " + model;
 		res.json(cpu);
 		return;
 	}
 
-	const token = (await redis.get("intel-token")) ?? (await refreshToken());
+	const token = (await redis.get<string>("intel-token")) ?? (await refreshToken());
 
 	// Get the url
 	let query = await fetch("https://platform.cloud.coveo.com/rest/search/v2?f:@tabfilter=[Products]", {
@@ -53,7 +54,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 		}),
 	});
 
-	if (query.status === 419) {
+	if (!query.ok) {
 		const token = await refreshToken();
 		query = await fetch("https://platform.cloud.coveo.com/rest/search/v2?f:@tabfilter=[Products]", {
 			method: "POST",
@@ -113,6 +114,9 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 	cpu = {
 		name: cpuName,
 		manufacturer: "intel",
+		// MSRP: parseFloat((getParameter("Recommended Customer Price") ?? "null").replace("$", "")),
+		MSRP: getPrice(getParameter("Recommended Customer Price")),
+		marketSegment: normaliseMarket(getParameter("Vertical Segment")),
 		lithography: getParameter("Lithography"),
 		cache: getFloatParameter("Cache"),
 		cores: {
@@ -131,21 +135,23 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 			maxSize: getFloatParameter("Max Memory Size"),
 		},
 		graphics: cpuName?.includes("F")
-			? false
-			: {
-					baseFrequency: getFloatParameter("Graphics Base Frequency"),
-					maxFrequency: getFloatParameter("Graphics Max Dynamic Frequency"),
-					displays:
-						getFloatParameter("Max # of Displays Supported") ??
-						getFloatParameter("# of Displays Supported"),
-			  },
+		          ? false
+		          : {
+				baseFrequency: getFloatParameter("Graphics Base Frequency"),
+				maxFrequency: getFloatParameter("Graphics Max Dynamic Frequency"),
+				displays:
+					getFloatParameter("Max # of Displays Supported") ??
+					getFloatParameter("# of Displays Supported"),
+			},
 		pcie: getParameter("PCI Express Revision"),
 		source: url,
-		schemaVer: 1.1,
+		ref: "/cpu/intel " + model,
+		scrapedAt: new Date(),
+		schemaVer: 1.2,
 	};
 
-	if (process.env.NODE_ENV === "production" || req.query["no-cache"] !== undefined)
-		await redis.set(`intel-${model}`, cpu);
+	// if (process.env.NODE_ENV === "production" || req.query["no-cache"] !== undefined)
+	await redis.json.set(`intel-${model}`, "$", cpu as Record<string, any>);
 	res.status(200).json(cpu);
 };
 
@@ -205,6 +211,12 @@ const getMemoryDetails = (): Memory["types"] => {
 			return { type: type, speed: parseInt(speed.split("/").pop() as string) };
 		})
 		.filter((mem) => mem?.speed !== null || mem !== null);
+};
+
+const getPrice = (s: string | null): number | null => {
+	if (s === null) return s;
+	s = (s.split("-").pop() as string).replace("$", "");
+	return parseFloat(s);
 };
 
 export const refreshToken = async () => {

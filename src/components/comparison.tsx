@@ -1,10 +1,41 @@
 import type { CPU, Graphics } from "../../CPU";
-import { Fragment } from "react";
+import { Fragment, useEffect } from "react";
 import { domAnimation, LazyMotion, m } from "framer-motion";
-import { colorDiff, formatNumber } from "../util/formatting";
+import { capitalize, colorDiff, formatNumber } from "../util/formatting";
+import { toast } from "react-toastify";
+import Link from "next/link";
 
 // Compare two CPUs
 const Comparison = ({ cpus }: { cpus: [CPU, CPU] }) => {
+	useEffect(() => {
+		(async () => {
+			let i = 0;
+			for (const cpu of cpus) {
+				if (cpu.marketSegment === "desktop" && cpu.MSRP === null && cpu.manufacturer === "amd") {
+					const $toast = toast.loading("Loading price for " + cpu.name + "...");
+					const res = await fetch(`/api/cpu/getPrice?model=${cpu.name}`);
+
+					if (res.ok) {
+						const price = await res.json();
+						(document.querySelector("#price-" + i) as HTMLSpanElement).innerHTML = price + "$";
+						toast.update($toast, {
+							render: "Price for " + cpu.name + " loaded",
+							type: "success",
+							autoClose: 2500,
+						});
+					} else {
+						toast.update($toast, {
+							render: "Failed to load price for " + cpu.name,
+							type: "error",
+							autoClose: 2500,
+						});
+					}
+				}
+				i++;
+			}
+		})();
+	}, [cpus]);
+
 	return (
 		<LazyMotion features={domAnimation}>
 			<m.div
@@ -18,8 +49,13 @@ const Comparison = ({ cpus }: { cpus: [CPU, CPU] }) => {
 						<tr className="border-b border-black">
 							<th className="p-2 text-left">Feature</th>
 							{cpus.map((cpu) => (
-								<th className="p-2 text-left underline transition-colors hover:text-white" key={cpu.name}>
-									<a href={cpu.source} target="_blank" rel="noreferrer">{cpu.name}</a>
+								<th
+									className="p-2 text-left underline transition-colors hover:text-white"
+									key={cpu.name}
+								>
+									<Link href={`/cpu/${cpu.name}`} target="_blank" rel="noreferrer">
+										{cpu.name}
+									</Link>
 								</th>
 							))}
 						</tr>
@@ -61,10 +97,18 @@ const RenderComparison: (cpus: [CPU, CPU], list: FeatureList, ...keys: string[])
 						<tr key={key}>
 							<td>{feature.title}</td>
 							<td>
-								<span className={colorDiff(a, b)}>{formatNumber(a, feature.unit || "")}</span>
+								<span className={colorDiff(a, b, feature.reverse === true)}>
+									{feature.prefix === false
+										? (a ?? "N/A") + (feature?.unit || "")
+										: formatNumber(a, feature.unit || "")}
+								</span>
 							</td>
 							<td>
-								<span className={colorDiff(a, b, true)}>{formatNumber(b, feature.unit || "")}</span>
+								<span className={colorDiff(a, b, feature.reverse !== true)}>
+									{feature.prefix === false
+										? (b ?? "N/A") + (feature?.unit || "")
+										: formatNumber(b, feature.unit || "")}
+								</span>
 							</td>
 						</tr>
 					);
@@ -86,48 +130,92 @@ const FeatureNames: FeatureList = {
 						<span className={colorDiff(cpu.cores.total, cpus[1 - i].cores.total)}>
 							{cpu.cores.performance !== null && cpu.cores.efficient !== null ? (
 								<>
-									{cpu.cores.performance}P / {cpu.cores.efficient}E
+									{cpu.cores.performance ?? 0}P / {cpu.cores.efficient ?? 0}E
 								</>
 							) : (
-								 cpu.cores.total
-							 )}
+								cpu.cores.total
+							)}
 						</span>
 					</td>
 				))}
 			</tr>
-		)
+		),
 	},
 	threads: {
 		title: "Threads",
-		type: "number"
+		type: "number",
 	},
 	baseFrequency: {
 		title: "Base Frequency",
 		type: "number",
-		unit: "Hz"
+		unit: "Hz",
 	},
 	maxFrequency: {
 		title: "Max Frequency",
 		type: "number",
-		unit: "Hz"
+		unit: "Hz",
 	},
 	cache: {
 		title: "Cache",
 		type: "number",
-		unit: "B"
+		unit: "B",
 	},
 	tdp: {
 		title: "TDP",
 		type: "number",
-		unit: "W"
+		unit: "W",
 	},
 	lithography: {
 		title: "Lithography",
-		type: "string"
+		type: "string",
+	},
+	marketSegment: {
+		title: "Market Segment",
+		type: "custom",
+		parse: (cpus) => (
+			<tr key="marketSegment">
+				<td className="p-2">Market Segment</td>
+				{cpus.map((cpu) => {
+					const hidePrice =
+						cpu.marketSegment == "embedded" || (cpu.marketSegment == "mobile" && cpu.manufacturer == "amd");
+					return (
+						<td
+							className={`p-2 ${hidePrice ? "text-center" : ""}`}
+							key={cpu.name}
+							rowSpan={hidePrice ? 2 : 1}
+						>
+							{capitalize(cpu.marketSegment || "N/A")}
+						</td>
+					);
+				})}
+			</tr>
+		),
+	},
+	MSRP: {
+		title: "Price",
+		type: "custom",
+		parse: (cpus) => (
+			<tr key="MSRP">
+				<td className="p-2">Price</td>
+				{cpus.map((cpu, i) => {
+					const hidePrice =
+						cpu.marketSegment == "embedded" || (cpu.marketSegment == "mobile" && cpu.manufacturer == "amd");
+					if (hidePrice) return <></>;
+
+					return (
+						<td className="p-2" key={cpu.name}>
+							<span className={colorDiff(cpu.MSRP, cpus[1 - i].MSRP, true)} id={"price-" + i}>
+								{formatNumber(cpu.MSRP, "$")}
+							</span>
+						</td>
+					);
+				})}
+			</tr>
+		),
 	},
 	launchDate: {
 		title: "Launch Date",
-		type: "string"
+		type: "string",
 	},
 	memory: {
 		types: {
@@ -136,10 +224,7 @@ const FeatureNames: FeatureList = {
 			parse: (cpus) => (
 				<>
 					<tr>
-						<td
-							colSpan={3}
-							className="bg-gray-700 text-center text-xl uppercase text-gray-300"
-						>
+						<td colSpan={3} className="bg-gray-700 text-center text-xl uppercase text-gray-300">
 							Memory
 						</td>
 					</tr>
@@ -148,13 +233,13 @@ const FeatureNames: FeatureList = {
 						<MemoryComparison cpus={cpus} />
 					</tr>
 				</>
-			)
+			),
 		},
 		maxSize: {
 			title: "Max Size",
 			type: "number",
-			unit: "B"
-		}
+			unit: "B",
+		},
 	},
 	graphics: {
 		title: "Graphics",
@@ -162,28 +247,25 @@ const FeatureNames: FeatureList = {
 		parse: (cpus) => (
 			<>
 				<tr>
-					<td
-						colSpan={3}
-						className="bg-gray-700 text-center text-xl uppercase text-gray-300"
-					>
+					<td colSpan={3} className="bg-gray-700 text-center text-xl uppercase text-gray-300">
 						Graphics
 					</td>
 				</tr>
 				{GraphicsComparison({ cpus })}
 			</>
-		)
-	}
+		),
+	},
 };
 
 type FeatureList = {
 	[key in keyof CPU]?: Feature | Record<string, Feature>;
 };
 
-type Feature = { title: string } & (
-	| { type: "number"; unit?: string }
+type Feature = { title: string } & ( // Prefix is whether is to add K, M, G, etc. to the number
+	| { type: "number"; unit?: string; prefix?: boolean; reverse?: boolean }
 	| { type: "string" }
 	| { type: "custom"; card?: true; parse: (cpus: CPU[]) => JSX.Element }
-	);
+);
 
 const MemoryComparison = ({ cpus }: { cpus: CPU[] }) => {
 	const matchingTypes = cpus[0].memory.types
