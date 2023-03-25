@@ -7,9 +7,9 @@ import { formatNumber } from "../../util/formatting";
 import Navbar from "../../components/navbar";
 import { domAnimation, LazyMotion, m, useTime, useTransform } from "framer-motion";
 import { ReloadIcon } from "../../components/icons";
-import { useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import fetchCPU from "../../util/fetchCPU";
-import { toast } from "react-toastify";
+import { toast, ToastContainer } from "react-toastify";
 
 export const config = {
 	runtime: "experimental-edge",
@@ -22,6 +22,15 @@ const Cpu = ({ data }: InferGetServerSidePropsType<typeof getServerSideProps>) =
 	const rotate = useTransform(time, [0, 2000], [0, 360], { clamp: false });
 	const [refetch, setRefetch] = useState(false);
 
+	useEffect(() => {
+		const searchParams = new URLSearchParams(window.location.search);
+		if (searchParams.get("r") === "true") {
+			toast.success("CPU data refreshed");
+			searchParams.delete("r");
+			window.history.replaceState({}, "", window.location.pathname + "?" + searchParams.toString());
+		}
+	}, []);
+
 	return (
 		<>
 			<Head>
@@ -32,7 +41,7 @@ const Cpu = ({ data }: InferGetServerSidePropsType<typeof getServerSideProps>) =
 				/>
 			</Head>
 			<Navbar />
-			<div className="min-h-[90vh] text-white">
+			<div className="min-h-[90vh] bg-gray-800 text-white">
 				<h1 className="text-3xl">{data.name}</h1>
 				<button
 					onClick={() => {
@@ -47,7 +56,7 @@ const Cpu = ({ data }: InferGetServerSidePropsType<typeof getServerSideProps>) =
 								);
 								return;
 							}
-							window.location.reload();
+							window.location.replace(window.location.href + "?r=true");
 						});
 					}}
 					title="Reload data"
@@ -61,60 +70,55 @@ const Cpu = ({ data }: InferGetServerSidePropsType<typeof getServerSideProps>) =
 						</m.div>
 					</LazyMotion>
 				</button>
-				<table className="w-3/5 table-auto bg-white/20 [&td]:w-1/2">
-					<tbody className="text-xl [&span]:leading-6">
-						<tr>
-							<td className="text-left">Manufacturer</td>
-							<td>{data.manufacturer}</td>
-						</tr>
-						<tr>
-							<td className="text-left">Model</td>
-							<td>{data.name}</td>
-						</tr>
-						<tr>
-							<td className="text-left">Cores</td>
-							<td>
-								<Cores cores={data.cores} />
-							</td>
-						</tr>
-						<tr>
-							<td className="text-left">Threads</td>
-							<td>{data.threads}</td>
-						</tr>
-						<tr>
-							<td className="text-left">Base Clock</td>
-							<td>{formatNumber(data.baseFrequency, "Hz")}</td>
-						</tr>
-						<tr>
-							<td className="text-left">Boost Clock</td>
-							<td>{formatNumber(data.maxFrequency, "Hz")}</td>
-						</tr>
-						<tr>
-							<td className="text-left">TDP</td>
-							<td>{data.tdp} W</td>
-						</tr>
-						<tr>
-							<td className="text-left">Price</td>
-							<td>{data.MSRP}</td>
-						</tr>
-						<tr>
-							<td className="text-left">Platform</td>
-							<td>{data.marketSegment}</td>
-						</tr>
-						<tr>
-							<td className="text-center" colSpan={2}>
-								<a href={data.source}>Source</a>
-							</td>
-						</tr>
-					</tbody>
-				</table>
+				<div className="w-3/5 bg-white/20 p-6">
+					<RenderTable cpu={data} list={TableStructure} />
+				</div>
 			</div>
+			<ToastContainer autoClose={2500} position="bottom-left" theme="dark" draggable={false} />
 			<Footer />
 		</>
 	);
 };
 
-const Cores = ({ cores }: { cores: CPU["cores"] }) => {
+const RenderTable = ({ cpu, list }: { cpu: CPU; list: Table }) => (
+	<Fragment>
+		{Object.keys(list).map((key) => (
+			<div key={key}>
+				{Object.keys(list[key]).map((row) => {
+					const currentRow = list[key][row];
+					if (currentRow.type === "component") return currentRow.component({ cpu });
+
+					const value = traversePath(currentRow.path, cpu);
+
+					switch (currentRow.type) {
+						case "number":
+							return (
+								<div key={row}>
+									<span className="text-left">{currentRow.title}</span>
+									<span className="text-right">
+										{currentRow.prefix
+										 ? formatNumber(value, currentRow.unit)
+										 : value + currentRow.unit}
+									</span>
+								</div>
+							);
+						case "string":
+							return (
+								<div key={row}>
+									<span className="text-left">{currentRow.title}</span>
+									<span className="text-right">{value}</span>
+								</div>
+							);
+					}
+				})}
+			</div>
+		))}
+	</Fragment>
+);
+
+const Cores = ({ cpu }: { cpu: CPU }) => {
+	const cores = cpu.cores;
+
 	if (cores.performance === null && cores.efficient === null) {
 		return <span>{cores.total}</span>;
 	}
@@ -128,12 +132,46 @@ const Cores = ({ cores }: { cores: CPU["cores"] }) => {
 	);
 };
 
-export const getServerSideProps: GetServerSideProps<{ data: CPU }> = async ({ req }) => {
-	// res.setHeader(
-	// 	"Cache-Control",
-	// 	"public, s-maxage=3600, stale-while-revalidate=86400",
-	// );
+const TableStructure: Table = {
+	General: {
+		launchDate: {
+			title: "Launch Date",
+			path: "launchDate",
+			type: "string",
+		},
+		market: {
+			title: "Market",
+			path: "market",
+			type: "string",
+		},
+		lithography: {
+			title: "Lithography",
+			path: "lithography",
+			type: "string",
+		},
+	},
+	Performance: {
+		cores: {
+			title: "Cores",
+			type: "component",
+			component: Cores,
+		},
+	},
+};
 
+type Table = {
+	[key: string]: Record<string, Row>;
+};
+
+type Row = { title: string } & ( // Prefix is whether is to add K, M, G, etc. to the number
+	| { type: "number"; unit: string; prefix?: boolean; path: string }
+	| { type: "component"; component: ({ cpu }: { cpu: CPU }) => JSX.Element }
+	| { type: "string"; path: string }
+	);
+
+const traversePath = (path: string, obj: any) => path.split(".").reduce((prev, curr) => prev && prev[curr], obj);
+
+export const getServerSideProps: GetServerSideProps<{ data: CPU }> = async ({ req }) => {
 	if (!req.url) {
 		return {
 			notFound: true,

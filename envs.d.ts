@@ -4,3 +4,4 @@ declare namespace NodeJS {
 		BROWSERLESS_TOKEN: string;
 	}
 }
+

@@ -6,7 +6,6 @@ import Comparison from "../components/comparison";
 import Selector from "../components/selector";
 import { ToastContainer } from "react-toastify";
 import Footer from "../components/footer";
-import Link from "next/link";
 import Navbar from "../components/navbar";
 
 export default function Index() {
