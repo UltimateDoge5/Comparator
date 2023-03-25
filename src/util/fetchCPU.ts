@@ -1,20 +1,30 @@
 import type { CPU, Manufacturer } from "../../CPU";
 
-const host = process.env.NODE_ENV === "production" ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000";
+const host =
+	process.env.NODE_ENV === "production"
+		? `https://${process.env.NEXT_PUBLIC_VERCEL_URL || process.env.VERCEL_URL}`
+		: "http://localhost:3000";
 
 const fetchCPU = async (manufacturer: Manufacturer, model: string, noCache = false) =>
 	new Promise<Result>(async (resolve) => {
 		const response = await fetch(
-			`${host}/api/cpu/${manufacturer.toLowerCase()}?model=${model}&${noCache ? "no-cache" : ""}`,
+			`${host}/api/cpu/${manufacturer.toLowerCase()}?model=${model}&${noCache ? "no-cache" : ""}`
 		);
 
 		if (!response.ok) {
-			// resolve(null response.text() || response.statusText);
+			let errorText = await response.text();
+
+			// Sometimes the text is HTML, and we don't want that to be displayed
+			if (!errorText || errorText.length > 64) {
+				errorText = response.statusText;
+			}
+
 			resolve({
 				error: {
-					text: (await response.text()) || response.statusText,
+					text: errorText,
 					code: response.status,
-				}, data: {} as CPU,
+				},
+				data: {} as CPU,
 			});
 			return;
 		}
