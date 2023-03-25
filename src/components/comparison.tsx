@@ -49,8 +49,13 @@ const Comparison = ({ cpus }: { cpus: [CPU, CPU] }) => {
 						<tr className="border-b border-black">
 							<th className="p-2 text-left">Feature</th>
 							{cpus.map((cpu) => (
-								<th className="p-2 text-left underline transition-colors hover:text-white" key={cpu.name}>
-									<Link href={`/cpu/${cpu.name}`} target="_blank" rel="noreferrer">{cpu.name}</Link>
+								<th
+									className="p-2 text-left underline transition-colors hover:text-white"
+									key={cpu.name}
+								>
+									<Link href={`/cpu/${cpu.name}`} target="_blank" rel="noreferrer">
+										{cpu.name}
+									</Link>
 								</th>
 							))}
 						</tr>
@@ -92,10 +97,18 @@ const RenderComparison: (cpus: [CPU, CPU], list: FeatureList, ...keys: string[])
 						<tr key={key}>
 							<td>{feature.title}</td>
 							<td>
-								<span className={colorDiff(a, b, feature.reverse === true)}>{feature.prefix === false ? (a ?? "N/A") + (feature?.unit || "") : formatNumber(a, feature.unit || "")}</span>
+								<span className={colorDiff(a, b, feature.reverse === true)}>
+									{feature.prefix === false
+										? (a ?? "N/A") + (feature?.unit || "")
+										: formatNumber(a, feature.unit || "")}
+								</span>
 							</td>
 							<td>
-								<span className={colorDiff(a, b, feature.reverse !== true)}>{feature.prefix === false ? (b ?? "N/A") + (feature?.unit || "") : formatNumber(b, feature.unit || "")}</span>
+								<span className={colorDiff(a, b, feature.reverse !== true)}>
+									{feature.prefix === false
+										? (b ?? "N/A") + (feature?.unit || "")
+										: formatNumber(b, feature.unit || "")}
+								</span>
 							</td>
 						</tr>
 					);
@@ -117,11 +130,11 @@ const FeatureNames: FeatureList = {
 						<span className={colorDiff(cpu.cores.total, cpus[1 - i].cores.total)}>
 							{cpu.cores.performance !== null && cpu.cores.efficient !== null ? (
 								<>
-									{cpu.cores.performance}P / {cpu.cores.efficient}E
+									{cpu.cores.performance ?? 0}P / {cpu.cores.efficient ?? 0}E
 								</>
 							) : (
-								 cpu.cores.total
-							 )}
+								cpu.cores.total
+							)}
 						</span>
 					</td>
 				))}
@@ -163,18 +176,18 @@ const FeatureNames: FeatureList = {
 			<tr key="marketSegment">
 				<td className="p-2">Market Segment</td>
 				{cpus.map((cpu) => {
-						const hidePrice = cpu.marketSegment == "embedded" || (cpu.marketSegment == "mobile" && cpu.manufacturer == "amd");
-						return (
-							<td
-								className={`p-2 ${hidePrice ? "text-center" : ""}`}
-								key={cpu.name}
-								rowSpan={hidePrice ? 2 : 1}
-							>
-								{capitalize(cpu.marketSegment || "N/A")}
-							</td>
-						);
-					},
-				)}
+					const hidePrice =
+						cpu.marketSegment == "embedded" || (cpu.marketSegment == "mobile" && cpu.manufacturer == "amd");
+					return (
+						<td
+							className={`p-2 ${hidePrice ? "text-center" : ""}`}
+							key={cpu.name}
+							rowSpan={hidePrice ? 2 : 1}
+						>
+							{capitalize(cpu.marketSegment || "N/A")}
+						</td>
+					);
+				})}
 			</tr>
 		),
 	},
@@ -185,18 +198,18 @@ const FeatureNames: FeatureList = {
 			<tr key="MSRP">
 				<td className="p-2">Price</td>
 				{cpus.map((cpu, i) => {
-						const hidePrice = cpu.marketSegment == "embedded" || (cpu.marketSegment == "mobile" && cpu.manufacturer == "amd");
-						if (hidePrice) return <></>;
+					const hidePrice =
+						cpu.marketSegment == "embedded" || (cpu.marketSegment == "mobile" && cpu.manufacturer == "amd");
+					if (hidePrice) return <></>;
 
-						return (
-							<td className="p-2" key={cpu.name}>
-								<span className={colorDiff(cpu.MSRP, cpus[1 - i].MSRP, true)} id={"price-" + i}>
-	 						        {formatNumber(cpu.MSRP, "$")}
-								</span>
-							</td>
-						);
-					},
-				)}
+					return (
+						<td className="p-2" key={cpu.name}>
+							<span className={colorDiff(cpu.MSRP, cpus[1 - i].MSRP, true)} id={"price-" + i}>
+								{formatNumber(cpu.MSRP, "$")}
+							</span>
+						</td>
+					);
+				})}
 			</tr>
 		),
 	},
@@ -211,10 +224,7 @@ const FeatureNames: FeatureList = {
 			parse: (cpus) => (
 				<>
 					<tr>
-						<td
-							colSpan={3}
-							className="bg-gray-700 text-center text-xl uppercase text-gray-300"
-						>
+						<td colSpan={3} className="bg-gray-700 text-center text-xl uppercase text-gray-300">
 							Memory
 						</td>
 					</tr>
@@ -237,10 +247,7 @@ const FeatureNames: FeatureList = {
 		parse: (cpus) => (
 			<>
 				<tr>
-					<td
-						colSpan={3}
-						className="bg-gray-700 text-center text-xl uppercase text-gray-300"
-					>
+					<td colSpan={3} className="bg-gray-700 text-center text-xl uppercase text-gray-300">
 						Graphics
 					</td>
 				</tr>
@@ -254,12 +261,11 @@ type FeatureList = {
 	[key in keyof CPU]?: Feature | Record<string, Feature>;
 };
 
-type Feature = { title: string } & (
-	// Prefix is whether is to add K, M, G, etc. to the number
-	| { type: "number"; unit?: string, prefix?: boolean, reverse?: boolean }
+type Feature = { title: string } & ( // Prefix is whether is to add K, M, G, etc. to the number
+	| { type: "number"; unit?: string; prefix?: boolean; reverse?: boolean }
 	| { type: "string" }
 	| { type: "custom"; card?: true; parse: (cpus: CPU[]) => JSX.Element }
-	);
+);
 
 const MemoryComparison = ({ cpus }: { cpus: CPU[] }) => {
 	const matchingTypes = cpus[0].memory.types
@@ -320,7 +326,7 @@ const GraphicsComparison = ({ cpus }: { cpus: CPU[] }) => {
 							className={colorDiff(
 								(cpus[0].graphics as Graphics)?.baseFrequency,
 								(cpus[1].graphics as Graphics)?.baseFrequency,
-								i === 1,
+								i === 1
 							)}
 						>
 							{formatNumber(cpu.graphics.baseFrequency, "Hz")}
@@ -329,7 +335,7 @@ const GraphicsComparison = ({ cpus }: { cpus: CPU[] }) => {
 						<td key={cpu.name} rowSpan={3}>
 							No graphics included
 						</td>
-					),
+					)
 				)}
 			</tr>
 			<tr>
@@ -342,12 +348,12 @@ const GraphicsComparison = ({ cpus }: { cpus: CPU[] }) => {
 								className={colorDiff(
 									(cpus[0].graphics as Graphics)?.maxFrequency,
 									(cpus[1].graphics as Graphics)?.maxFrequency,
-									i === 1,
+									i === 1
 								)}
 							>
 								{formatNumber(cpu.graphics.maxFrequency, "Hz")}
 							</td>
-						),
+						)
 				)}
 			</tr>
 			<tr>
@@ -360,12 +366,12 @@ const GraphicsComparison = ({ cpus }: { cpus: CPU[] }) => {
 								className={colorDiff(
 									(cpus[0].graphics as Graphics)?.displays,
 									(cpus[1].graphics as Graphics)?.displays,
-									i === 1,
+									i === 1
 								)}
 							>
 								{cpu.graphics.displays || "Unknown"}
 							</td>
-						),
+						)
 				)}
 			</tr>
 		</>
