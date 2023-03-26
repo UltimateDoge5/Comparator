@@ -14,11 +14,12 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json());
 const List = () => {
 	const [query, setQuery] = useState(getQuery());
 
-	const { data, size, setSize, isLoading } = useSWRInfinite<{ model: string, manufacturer: Manufacturer }[]>(
-		(index) =>
-			`/api/cpu/search?q=${query}&p=${index + 1}`,
-		fetcher, { keepPreviousData: false },
-	);
+	const { data, size, setSize, isLoading } = useSWRInfinite<{
+		names: { model: string; manufacturer: Manufacturer }[];
+		remainingItems: number;
+	}>((index) => `/api/cpu/search?q=${query}&p=${index + 1}`, fetcher);
+
+	const remainingItems = data?.[data.length - 1]?.remainingItems || 0;
 
 	return (
 		<>
@@ -37,7 +38,7 @@ const List = () => {
 					placeholder="Search for a CPU"
 				/>
 				<div className="flex w-full flex-col items-center gap-6">
-					{data?.map((names, i) => {
+					{data?.map(({ names }, i) => {
 						return (
 							<Fragment key={i}>
 								{names.map((cpu) => (
@@ -46,13 +47,15 @@ const List = () => {
 							</Fragment>
 						);
 					})}
-					{isLoading && Array.from({ length: 5 }).fill(1).map((_, i) => (
-						<div key={i} className="h-16 w-1/2 animate-pulse rounded-md bg-gray-800" />
-					))}
+					{isLoading &&
+						Array.from({ length: 5 })
+							.fill(1)
+							.map((_, i) => <div key={i} className="h-16 w-1/2 animate-pulse rounded-md bg-gray-800" />)}
+					{remainingItems === 0 && <span className="text-xl font-medium">No more CPUs to show</span>}
 				</div>
 				<button
 					onClick={() => setSize(size + 1)}
-					disabled={isLoading}
+					disabled={isLoading || remainingItems === 0}
 					className="mb-8 rounded-md border border-slate-200/20 bg-slate-50/5 px-6 py-2 text-slate-100 transition-colors hover:bg-slate-100/10 disabled:pointer-events-none disabled:opacity-50"
 				>
 					Load more
@@ -64,7 +67,7 @@ const List = () => {
 	);
 };
 
-const CPUItem = ({ model, manufacturer }: { model: string, manufacturer: Manufacturer }) => {
+const CPUItem = ({ model, manufacturer }: { model: string; manufacturer: Manufacturer }) => {
 	const { data, error, isLoading, mutate } = useSWR<CPU>(`/api/cpu/${manufacturer}?model=${model}`, fetcher, {});
 	const [loadingPrice, setLoadingPrice] = useState(false);
 
@@ -94,24 +97,35 @@ const CPUItem = ({ model, manufacturer }: { model: string, manufacturer: Manufac
 				<Link href={data?.ref || `/cpu/${model}`}>{model}</Link>
 			</h1>
 
-			<span className={isLoading || error ? "flex h-6 w-24 animate-pulse items-center rounded-md bg-gray-800 text-transparent" : ""}>
+			<span
+				className={
+					isLoading || error
+						? "flex h-6 w-24 animate-pulse items-center rounded-md bg-gray-800 text-transparent"
+						: ""
+				}
+			>
 				{capitalize(data?.marketSegment || "Unknown market")}
 			</span>
 			<span
-				style={{ gridArea: "1 / 5 / 2 / 6" }}
-				className={isLoading || error ? "flex h-6 w-24 animate-pulse items-center rounded-md bg-gray-800 text-transparent" : ""}
+				className={
+					isLoading || error
+						? "flex h-6 w-24 animate-pulse items-center rounded-md bg-gray-800 text-transparent"
+						: ""
+				}
 			>
 				{data?.launchDate || ""}
 			</span>
 			<span
-				style={{ gridArea: "1 / 6 / 2 / 7" }}
-				className={isLoading || loadingPrice || error ? "flex  h-6 animate-pulse items-center rounded-md bg-gray-800 text-transparent" : ""}
+				className={
+					isLoading || loadingPrice || error
+						? "flex  h-6 animate-pulse items-center rounded-md bg-gray-800 text-transparent"
+						: ""
+				}
 			>
 				{data?.MSRP ? `${data.MSRP}$` : "Unavailable"}
 			</span>
 		</div>
 	);
-
 };
 
 const getManufacturerColor = (manufacturer: Manufacturer) => {
