@@ -1,14 +1,12 @@
 import type { CPU } from "../../../CPU";
 import type { GetServerSideProps, InferGetServerSidePropsType } from "next";
 import Footer from "../../components/footer";
-import { splitFirst } from "../../components/selector";
 import Head from "next/head";
 import { capitalize, formatNumber } from "../../util/formatting";
 import Navbar from "../../components/navbar";
 import { domAnimation, LazyMotion, m, useTime, useTransform } from "framer-motion";
 import { ReloadIcon } from "../../components/icons";
 import { Fragment, useEffect, useState } from "react";
-import fetchCPU from "../../util/fetchCPU";
 import { toast, ToastContainer } from "react-toastify";
 
 export const config = {
@@ -33,9 +31,26 @@ const Cpu = ({ data }: InferGetServerSidePropsType<typeof getServerSideProps>) =
 		if (searchParams.get("r") === "true") {
 			toast.success("CPU data refreshed");
 			searchParams.delete("r");
-			window.history.replaceState({}, "", window.location.pathname + "?" + searchParams.toString());
+			window.history.replaceState({}, "", window.location.pathname);
 		}
 	}, []);
+
+	const refreshCPU = async () => {
+		setRefetch(true);
+		const result = await fetch(`/api/cpu/${data.manufacturer}/${data.name}`);
+
+		if (!result.ok) {
+			toast.error(
+				result.status === 504
+					? "The server is taking too long to respond. Try again later."
+					: await result.text()
+			);
+			return;
+		}
+
+		setRefetch(false);
+		setTimeout(() => window.location.replace(window.location.href + "?r=true"), 100);
+	};
 
 	return (
 		<>
@@ -51,21 +66,7 @@ const Cpu = ({ data }: InferGetServerSidePropsType<typeof getServerSideProps>) =
 				<div className="my-4 flex justify-center gap-4">
 					<h1 className="text-3xl">{data.name}</h1>
 					<button
-						onClick={() => {
-							setRefetch(true);
-							fetchCPU(data.manufacturer, data.name || "", true).then((cpu) => {
-								setRefetch(false);
-								if (cpu.error) {
-									toast.error(
-										cpu.error.code === 504
-											? "The server is taking too long to respond. Try again later."
-											: cpu.error.text
-									);
-									return;
-								}
-								window.location.replace(window.location.href + "?r=true");
-							});
-						}}
+						onClick={refreshCPU}
 						title="Reload data"
 						disabled={data.name === null || refetch}
 						className="rounded-md border border-gray-400/20 bg-gray-400/20 p-2 transition-all
@@ -303,15 +304,15 @@ type Row = { title: string; hideOnUndefined?: true } & ( // Prefix is whether is
 
 const traversePath = (path: string, obj: any) => path.split(".").reduce((prev, curr) => prev && prev[curr], obj);
 
-export const getServerSideProps: GetServerSideProps<{ data: CPU }> = async ({ req }) => {
-	if (!req.url) {
+export const getServerSideProps: GetServerSideProps<{ data: CPU }> = async ({ req, params }) => {
+	if (!params?.cpu) {
 		return {
 			notFound: true,
 		};
 	}
 
-	let model = decodeURI(req.url.replaceAll("-", " ")?.split("/")[2].toLowerCase());
-	const manufacturer = splitFirst(decodeURI(model), " ")[0];
+	let model = params?.cpu as string;
+	const manufacturer = model?.split(" ")[0] as "intel" | "amd";
 	if (process.env.NODE_ENV === "development") console.log(model, manufacturer);
 
 	if (!manufacturer || !model || !["intel", "amd"].includes(manufacturer)) {
