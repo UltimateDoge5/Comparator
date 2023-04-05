@@ -78,7 +78,7 @@ const scrapeAMD = async (model: string, noCache: boolean) =>
 
 		// This needs to be a global variable, because the getParameter function uses it
 		// eslint-disable-next-line prefer-const
-		let $ = load(await specsPage.text());
+		$ = load(await specsPage.text());
 
 		cpu = {
 			name: $(".section-title").text().trim(),
@@ -119,7 +119,7 @@ const scrapeAMD = async (model: string, noCache: boolean) =>
 		};
 
 		// if (process.env.NODE_ENV === "production" || req.query["no-cache"] !== undefined)
-		await redis.json.set(model, "$", cpu as Record<string, any>);
+		// await redis.json.set(model, "$", cpu as Record<string, any>);
 		resolve(cpu);
 	});
 

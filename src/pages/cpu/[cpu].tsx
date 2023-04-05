@@ -8,10 +8,16 @@ import { domAnimation, LazyMotion, m, useTime, useTransform } from "framer-motio
 import { ReloadIcon } from "../../components/icons";
 import { Fragment, useEffect, useState } from "react";
 import { toast, ToastContainer } from "react-toastify";
+import scrapeAMD from "../../util/scrapers/amd";
+import scrapeIntel from "../../util/scrapers/intel";
+import Tooltip from "../../components/tooltip";
 
-export const config = {
-	runtime: "experimental-edge",
-};
+
+// Upstash Redis doesn't seem to like the experimental-edge runtime
+
+// export const config = {
+// 	runtime: "experimental-edge",
+// };
 
 const DateFormat = new Intl.DateTimeFormat("en-US", {
 	year: "numeric",
@@ -42,8 +48,8 @@ const Cpu = ({ data }: InferGetServerSidePropsType<typeof getServerSideProps>) =
 		if (!result.ok) {
 			toast.error(
 				result.status === 504
-					? "The server is taking too long to respond. Try again later."
-					: await result.text()
+				? "The server is taking too long to respond. Try again later."
+				: await result.text(),
 			);
 			return;
 		}
@@ -106,14 +112,19 @@ const RenderTable = ({ cpu, list }: { cpu: CPU; list: Table }) => (
 					if (currentRow.type === "component") {
 						return (
 							<div key={row} className="grid grid-cols-2 pb-1 text-left">
-								<span>{currentRow.title}</span>
+								<span className="flex items-center gap-1">
+									{currentRow.title}
+									{currentRow.tooltip !== undefined && <Tooltip tip={currentRow.tooltip} />}
+								</span>
 								{currentRow.component({ cpu })}
 							</div>
 						);
 					}
 
+					//Get the value from the path
 					const value = traversePath(currentRow.path, cpu);
 
+					//If there is no value, and we want to hide the row, return an empty fragment
 					if ((value === null || value === undefined) && currentRow.hideOnUndefined === true)
 						return <Fragment key={row} />;
 
@@ -121,18 +132,24 @@ const RenderTable = ({ cpu, list }: { cpu: CPU; list: Table }) => (
 						case "number":
 							return (
 								<div key={row} className="grid grid-cols-2 pb-1 text-left">
-									<span>{currentRow.title}</span>
-									<span>
+									<span className="flex items-center gap-1">
+										{currentRow.title}
+										{currentRow.tooltip !== undefined && <Tooltip tip={currentRow.tooltip} />}
+									</span>
+									<span >
 										{currentRow.prefix !== false
-											? formatNumber(value, currentRow.unit)
-											: value + currentRow.unit}
+										 ? formatNumber(value, currentRow.unit)
+										 : value + currentRow.unit}
 									</span>
 								</div>
 							);
 						case "string":
 							return (
 								<div key={row} className="grid grid-cols-2 text-left">
-									<span>{currentRow.title}</span>
+									<span className="flex items-center gap-1">
+										{currentRow.title}
+										{currentRow.tooltip !== undefined && <Tooltip tip={currentRow.tooltip} />}
+									</span>
 									<span>{currentRow.capitalize === true ? capitalize(value) : value}</span>
 								</div>
 							);
@@ -140,7 +157,10 @@ const RenderTable = ({ cpu, list }: { cpu: CPU; list: Table }) => (
 						case "date":
 							return (
 								<div key={row} className="grid grid-cols-2 text-left">
-									<span>{currentRow.title}</span>
+									<span>
+										{currentRow.title}
+										{currentRow.tooltip !== undefined && <Tooltip tip={currentRow.tooltip} />}
+									</span>
 									<span>{DateFormat.format(new Date(value))}</span>
 								</div>
 							);
@@ -177,12 +197,12 @@ const Memory = ({ cpu }: { cpu: CPU }) => {
 	return (
 		<div>
 			{cpu.memory.types.map((type) => (
-				<>
-					<span key={type?.type}>
+				<Fragment key={type?.type}>
+					<span>
 						{type?.type} at {type?.speed} MHz
 					</span>
 					<br />
-				</>
+				</Fragment>
 			))}
 		</div>
 	);
@@ -211,6 +231,7 @@ const TableStructure: Table = {
 			path: "MSRP",
 			type: "number",
 			unit: "$",
+			tooltip: "Manufacturer's suggested retail price",
 		},
 	},
 	"CPU specifications": {
@@ -231,6 +252,7 @@ const TableStructure: Table = {
 			title: "Cores",
 			type: "component",
 			component: Cores,
+			tooltip: "Displays total amount of cores. For some Intel cpus, it also displays the amount of performance and efficient cores.",
 		},
 		tdp: {
 			title: "TDP",
@@ -295,12 +317,12 @@ type Table = {
 	[key: string]: Record<string, Row>;
 };
 
-type Row = { title: string; hideOnUndefined?: true } & ( // Prefix is whether is to add K, M, G, etc. to the number
+type Row = { title: string; hideOnUndefined?: true, tooltip?: string } & ( // Prefix is whether is to add K, M, G, etc. to the number
 	| { type: "number"; unit: string; prefix?: boolean; path: string }
 	| { type: "component"; component: ({ cpu }: { cpu: CPU }) => JSX.Element }
 	| { type: "string"; capitalize?: true; path: string }
 	| { type: "date"; path: string }
-);
+	);
 
 const traversePath = (path: string, obj: any) => path.split(".").reduce((prev, curr) => prev && prev[curr], obj);
 
@@ -308,7 +330,7 @@ export const getServerSideProps: GetServerSideProps<{ data: CPU }> = async ({ re
 	if (!params?.cpu) {
 		return {
 			notFound: true,
-		};
+		}
 	}
 
 	let model = params?.cpu as string;
@@ -321,24 +343,21 @@ export const getServerSideProps: GetServerSideProps<{ data: CPU }> = async ({ re
 		};
 	}
 
+	let error: { code: number; message: string } | undefined;
+	let result: CPU;
+
 	if (manufacturer === "amd") {
 		model = model.replace("™", "");
+		result = await scrapeAMD(model, false).catch((err) => (error = err));
+	} else {
+		result = await scrapeIntel(model, false).catch((err) => (error = err));
 	}
 
-	const protocol = process.env.NODE_ENV === "production" ? "https" : "http";
-	const response = await fetch(`${protocol}://${req.headers.host}/api/cpu/${manufacturer}/?model=${model}`);
-
-	if (!response.ok) {
-		return {
-			notFound: true,
-		};
-	}
-
-	const data = (await response.json()) as CPU;
+	if (error) return { notFound: true };
 
 	return {
-		props: { data: data },
+		props: { data: result },
 	};
-};
+}
 
 export default Cpu;

@@ -33,12 +33,13 @@ const scrapeIntel = async (model: string, noCache: boolean) =>
 			}),
 		});
 
-		if (!query.ok) {
+		if (query.status === 401) {
 			const token = await refreshToken();
 			query = await fetch("https://platform.cloud.coveo.com/rest/search/v2?f:@tabfilter=[Products]", {
 				method: "POST",
 				headers: {
-					Authorization: token,
+					"Content-Type": "application/json",
+					Authorization: "Bearer" + token,
 				},
 				body: JSON.stringify({
 					q: model,
@@ -106,15 +107,14 @@ const scrapeIntel = async (model: string, noCache: boolean) =>
 				types: getMemoryDetails(),
 				maxSize: getFloatParameter("Max Memory Size"),
 			},
-			graphics: cpuName?.includes("F")
-				? false
+			graphics: cpuName?.includes("F") ? false
 				: {
-						baseFrequency: getFloatParameter("Graphics Base Frequency"),
-						maxFrequency: getFloatParameter("Graphics Max Dynamic Frequency"),
-						displays:
-							getFloatParameter("Max # of Displays Supported") ??
-							getFloatParameter("# of Displays Supported"),
-				  },
+					baseFrequency: getFloatParameter("Graphics Base Frequency"),
+					maxFrequency: getFloatParameter("Graphics Max Dynamic Frequency"),
+					displays:
+						getFloatParameter("Max # of Displays Supported") ??
+						getFloatParameter("# of Displays Supported"),
+				},
 			pcie: getParameter("PCI Express Revision"),
 			source: url,
 			ref: "/cpu/intel " + model,
