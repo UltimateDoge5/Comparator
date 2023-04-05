@@ -23,5 +23,5 @@ test(
 		const cpu = await scrapeAMD("amd-ryzen-7-5800h", true);
 		expect(cpu != null).toBe(true);
 	},
-	{ timeout: 10000 }
+	{ timeout: 15000 }
 );
