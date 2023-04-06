@@ -3,6 +3,8 @@ name: Run all tests
 env:
   UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
   UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
+  BROWSERLESS_URL: ${{ secrets.BROWSERLESS_URL }}
+  BROWSERLESS_TOKEN: ${{ secrets.BROWSERLESS_TOKEN }}
 
 on:
   push:
