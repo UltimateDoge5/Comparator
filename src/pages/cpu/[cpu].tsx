@@ -1,19 +1,23 @@
 import type { CPU } from "../../../CPU";
 import type { GetServerSideProps, InferGetServerSidePropsType } from "next";
 import Footer from "../../components/footer";
-import { splitFirst } from "../../components/selector";
 import Head from "next/head";
 import { capitalize, formatNumber } from "../../util/formatting";
 import Navbar from "../../components/navbar";
 import { domAnimation, LazyMotion, m, useTime, useTransform } from "framer-motion";
 import { ReloadIcon } from "../../components/icons";
 import { Fragment, useEffect, useState } from "react";
-import fetchCPU from "../../util/fetchCPU";
 import { toast, ToastContainer } from "react-toastify";
+import scrapeAMD from "../../util/scrapers/amd";
+import scrapeIntel from "../../util/scrapers/intel";
+import Tooltip from "../../components/tooltip";
 
-export const config = {
-	runtime: "experimental-edge",
-};
+
+// Upstash Redis doesn't seem to like the experimental-edge runtime
+
+// export const config = {
+// 	runtime: "experimental-edge",
+// };
 
 const DateFormat = new Intl.DateTimeFormat("en-US", {
 	year: "numeric",
@@ -33,9 +37,26 @@ const Cpu = ({ data }: InferGetServerSidePropsType<typeof getServerSideProps>) =
 		if (searchParams.get("r") === "true") {
 			toast.success("CPU data refreshed");
 			searchParams.delete("r");
-			window.history.replaceState({}, "", window.location.pathname + "?" + searchParams.toString());
+			window.history.replaceState({}, "", window.location.pathname);
 		}
 	}, []);
+
+	const refreshCPU = async () => {
+		setRefetch(true);
+		const result = await fetch(`/api/cpu/${data.manufacturer}/${data.name}`);
+
+		if (!result.ok) {
+			toast.error(
+				result.status === 504
+				? "The server is taking too long to respond. Try again later."
+				: await result.text(),
+			);
+			return;
+		}
+
+		setRefetch(false);
+		setTimeout(() => window.location.replace(window.location.href + "?r=true"), 100);
+	};
 
 	return (
 		<>
@@ -51,21 +72,7 @@ const Cpu = ({ data }: InferGetServerSidePropsType<typeof getServerSideProps>) =
 				<div className="my-4 flex justify-center gap-4">
 					<h1 className="text-3xl">{data.name}</h1>
 					<button
-						onClick={() => {
-							setRefetch(true);
-							fetchCPU(data.manufacturer, data.name || "", true).then((cpu) => {
-								setRefetch(false);
-								if (cpu.error) {
-									toast.error(
-										cpu.error.code === 504
-											? "The server is taking too long to respond. Try again later."
-											: cpu.error.text
-									);
-									return;
-								}
-								window.location.replace(window.location.href + "?r=true");
-							});
-						}}
+						onClick={refreshCPU}
 						title="Reload data"
 						disabled={data.name === null || refetch}
 						className="rounded-md border border-gray-400/20 bg-gray-400/20 p-2 transition-all
@@ -105,14 +112,19 @@ const RenderTable = ({ cpu, list }: { cpu: CPU; list: Table }) => (
 					if (currentRow.type === "component") {
 						return (
 							<div key={row} className="grid grid-cols-2 pb-1 text-left">
-								<span>{currentRow.title}</span>
+								<span className="flex items-center gap-1">
+									{currentRow.title}
+									{currentRow.tooltip !== undefined && <Tooltip tip={currentRow.tooltip} />}
+								</span>
 								{currentRow.component({ cpu })}
 							</div>
 						);
 					}
 
+					//Get the value from the path
 					const value = traversePath(currentRow.path, cpu);
 
+					//If there is no value, and we want to hide the row, return an empty fragment
 					if ((value === null || value === undefined) && currentRow.hideOnUndefined === true)
 						return <Fragment key={row} />;
 
@@ -120,18 +132,24 @@ const RenderTable = ({ cpu, list }: { cpu: CPU; list: Table }) => (
 						case "number":
 							return (
 								<div key={row} className="grid grid-cols-2 pb-1 text-left">
-									<span>{currentRow.title}</span>
-									<span>
+									<span className="flex items-center gap-1">
+										{currentRow.title}
+										{currentRow.tooltip !== undefined && <Tooltip tip={currentRow.tooltip} />}
+									</span>
+									<span >
 										{currentRow.prefix !== false
-											? formatNumber(value, currentRow.unit)
-											: value + currentRow.unit}
+										 ? formatNumber(value, currentRow.unit)
+										 : value + currentRow.unit}
 									</span>
 								</div>
 							);
 						case "string":
 							return (
 								<div key={row} className="grid grid-cols-2 text-left">
-									<span>{currentRow.title}</span>
+									<span className="flex items-center gap-1">
+										{currentRow.title}
+										{currentRow.tooltip !== undefined && <Tooltip tip={currentRow.tooltip} />}
+									</span>
 									<span>{currentRow.capitalize === true ? capitalize(value) : value}</span>
 								</div>
 							);
@@ -139,7 +157,10 @@ const RenderTable = ({ cpu, list }: { cpu: CPU; list: Table }) => (
 						case "date":
 							return (
 								<div key={row} className="grid grid-cols-2 text-left">
-									<span>{currentRow.title}</span>
+									<span>
+										{currentRow.title}
+										{currentRow.tooltip !== undefined && <Tooltip tip={currentRow.tooltip} />}
+									</span>
 									<span>{DateFormat.format(new Date(value))}</span>
 								</div>
 							);
@@ -176,12 +197,12 @@ const Memory = ({ cpu }: { cpu: CPU }) => {
 	return (
 		<div>
 			{cpu.memory.types.map((type) => (
-				<>
-					<span key={type?.type}>
+				<Fragment key={type?.type}>
+					<span>
 						{type?.type} at {type?.speed} MHz
 					</span>
 					<br />
-				</>
+				</Fragment>
 			))}
 		</div>
 	);
@@ -210,6 +231,7 @@ const TableStructure: Table = {
 			path: "MSRP",
 			type: "number",
 			unit: "$",
+			tooltip: "Manufacturer's suggested retail price",
 		},
 	},
 	"CPU specifications": {
@@ -230,6 +252,7 @@ const TableStructure: Table = {
 			title: "Cores",
 			type: "component",
 			component: Cores,
+			tooltip: "Displays total amount of cores. For some Intel cpus, it also displays the amount of performance and efficient cores.",
 		},
 		tdp: {
 			title: "TDP",
@@ -294,24 +317,24 @@ type Table = {
 	[key: string]: Record<string, Row>;
 };
 
-type Row = { title: string; hideOnUndefined?: true } & ( // Prefix is whether is to add K, M, G, etc. to the number
+type Row = { title: string; hideOnUndefined?: true, tooltip?: string } & ( // Prefix is whether is to add K, M, G, etc. to the number
 	| { type: "number"; unit: string; prefix?: boolean; path: string }
 	| { type: "component"; component: ({ cpu }: { cpu: CPU }) => JSX.Element }
 	| { type: "string"; capitalize?: true; path: string }
 	| { type: "date"; path: string }
-);
+	);
 
 const traversePath = (path: string, obj: any) => path.split(".").reduce((prev, curr) => prev && prev[curr], obj);
 
-export const getServerSideProps: GetServerSideProps<{ data: CPU }> = async ({ req }) => {
-	if (!req.url) {
+export const getServerSideProps: GetServerSideProps<{ data: CPU }> = async ({ req, params }) => {
+	if (!params?.cpu) {
 		return {
 			notFound: true,
-		};
+		}
 	}
 
-	let model = decodeURI(req.url.replaceAll("-", " ")?.split("/")[2].toLowerCase());
-	const manufacturer = splitFirst(decodeURI(model), " ")[0];
+	let model = params?.cpu as string;
+	const manufacturer = model?.split(" ")[0] as "intel" | "amd";
 	if (process.env.NODE_ENV === "development") console.log(model, manufacturer);
 
 	if (!manufacturer || !model || !["intel", "amd"].includes(manufacturer)) {
@@ -320,24 +343,21 @@ export const getServerSideProps: GetServerSideProps<{ data: CPU }> = async ({ re
 		};
 	}
 
+	let error: { code: number; message: string } | undefined;
+	let result: CPU;
+
 	if (manufacturer === "amd") {
 		model = model.replace("™", "");
+		result = await scrapeAMD(model, false).catch((err) => (error = err));
+	} else {
+		result = await scrapeIntel(model, false).catch((err) => (error = err));
 	}
 
-	const protocol = process.env.NODE_ENV === "production" ? "https" : "http";
-	const response = await fetch(`${protocol}://${req.headers.host}/api/cpu/${manufacturer}/?model=${model}`);
-
-	if (!response.ok) {
-		return {
-			notFound: true,
-		};
-	}
-
-	const data = (await response.json()) as CPU;
+	if (error) return { notFound: true };
 
 	return {
-		props: { data: data },
+		props: { data: result },
 	};
-};
+}
 
 export default Cpu;

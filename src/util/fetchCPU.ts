@@ -1,14 +1,9 @@
 import type { CPU, Manufacturer } from "../../CPU";
 
-const host =
-	process.env.NODE_ENV === "production"
-		? `https://${process.env.NEXT_PUBLIC_VERCEL_URL || process.env.VERCEL_URL}`
-		: "http://localhost:3000";
-
 const fetchCPU = async (manufacturer: Manufacturer, model: string, noCache = false) =>
 	new Promise<Result>(async (resolve) => {
 		const response = await fetch(
-			`${host}/api/cpu/${manufacturer.toLowerCase()}?model=${model}&${noCache ? "no-cache" : ""}`
+			`/api/cpu/${manufacturer.toLowerCase()}?model=${model}&${noCache ? "no-cache" : ""}`
 		);
 
 		if (!response.ok) {
