@@ -46,7 +46,7 @@ const Selector = ({ setCPU, urlId }: SelectorProps) => {
 					}
 					setCountdownBarPercent(percent);
 				},
-				window.matchMedia("(max-width: 768px)").matches ? 35 : 20,
+				35,
 			);
 		}
 

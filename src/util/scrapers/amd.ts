@@ -12,46 +12,14 @@ const redis = Redis.fromEnv();
 
 const scrapeAMD = async (model: string, noCache: boolean) =>
 	new Promise<CPU>(async (resolve, reject) => {
-		let cpu: CPU | null = !noCache ? (await redis.json.get(model, "$"))?.[0] : null;
-		if (cpu !== null && cpu?.schemaVer >= parseFloat(process.env.MIN_SCHEMA_VERSION || "1.1")) {
-			return resolve(cpu);
+		let cpu: CPU | null = !noCache ? (await redis.json.get(model.replace(/ /g, "-"), "$"))?.[0] : null;
+		if (cpu !== null && cpu?.schemaVer >= parseFloat(process.env.MIN_SCHEMA_VERSION || "1.1")) return resolve(cpu);
+
+		const url = AMD_PRODUCTS.find((item) => item.name.replace("™", "").toLowerCase() === model)?.url;
+		if (!url) {
+			console.error("CPU not found:", model);
+			return reject({ message: "CPU not found", code: 404 });
 		}
-
-		const url = AMD_PRODUCTS.find((item) => item.split("/").pop() === model);
-
-		if (!url) return reject({ message: "CPU not found", code: 404 });
-
-		// Get the product page, and find the link to specs page
-		const productPage = await fetch(
-			`https://${process.env.BROWSERLESS_URL}/scrape?token=${process.env.BROWSERLESS_TOKEN}`,
-			{
-				method: "POST",
-				body: JSON.stringify({
-					url: `https://www.amd.com${url}`,
-					userAgent:
-						"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.125 Safari/537.36",
-					elements: [
-						{
-							selector: ".full_specs_link a",
-						},
-					],
-				}),
-				headers: {
-					"Content-Type": "application/json",
-				},
-			},
-		);
-
-		if (productPage.status !== 200) {
-			console.error(productPage.statusText);
-			return reject({ message: "Error while fetching the product page", code: 500 });
-		}
-
-		const specsLink = (await productPage.json())?.data[0]?.results[0]?.attributes?.find(
-			(item: any) => item.name === "href",
-		)?.value;
-
-		if (!specsLink) return reject({ message: "Unable to find the specs page", code: 404 });
 
 		//Get the specs page
 		const specsPage = await fetch(
@@ -59,7 +27,7 @@ const scrapeAMD = async (model: string, noCache: boolean) =>
 			{
 				method: "POST",
 				body: JSON.stringify({
-					url: `https://www.amd.com${specsLink}`,
+					url: url,
 					userAgent:
 						"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.125 Safari/537.36",
 				}),
@@ -69,7 +37,7 @@ const scrapeAMD = async (model: string, noCache: boolean) =>
 			},
 		);
 
-		if (process.env.NODE_ENV === "development") console.log("Fetching page: ", `https://www.amd.com${specsLink}`);
+		if (process.env.NODE_ENV === "development") console.log("Fetching page: ", url);
 
 		if (specsPage.status !== 200) {
 			console.error(specsPage.statusText);
@@ -112,14 +80,14 @@ const scrapeAMD = async (model: string, noCache: boolean) =>
 					}
 				: false,
 			pcie: getParameter("PCI Express Revision"),
-			source: `https://www.amd.com${specsLink}`,
+			source: url,
 			ref: "/cpu/" + model,
 			scrapedAt: new Date(),
 			schemaVer: 1.2,
 		};
 
 		// if (process.env.NODE_ENV === "production" || req.query["no-cache"] !== undefined)
-		await redis.json.set(model, "$", cpu as Record<string, any>);
+		await redis.json.set(model.replace(/ /g,"-"), "$", cpu as Record<string, any>);
 		resolve(cpu);
 	});
 
