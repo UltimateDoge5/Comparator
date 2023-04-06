@@ -44,7 +44,7 @@ const Comparison = ({ cpus }: { cpus: [CPU, CPU] }) => {
 				transition={{ duration: 0.3 }}
 				className="relative overflow-x-auto shadow-md sm:rounded-t-md"
 			>
-				<table className="w-full table-fixed text-left text-xl text-gray-300 md:text-2xl [&_td,&_th]:px-4 [&_td,&_th]:py-2">
+				<table className="w-full table-fixed text-left text-xl text-gray-300 md:text-2xl [&_td]:px-4 [&_td]:py-2">
 					<thead className="bg-gray-700 text-base uppercase text-gray-300 md:text-xl">
 						<tr className="border-b border-black">
 							<th className="p-2 text-left">Feature</th>

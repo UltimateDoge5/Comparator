@@ -39,7 +39,7 @@ const scrapeAMD = async (model: string, noCache: boolean) =>
 				headers: {
 					"Content-Type": "application/json",
 				},
-			}
+			},
 		);
 
 		if (productPage.status !== 200) {
@@ -48,7 +48,7 @@ const scrapeAMD = async (model: string, noCache: boolean) =>
 		}
 
 		const specsLink = (await productPage.json())?.data[0]?.results[0]?.attributes?.find(
-			(item: any) => item.name === "href"
+			(item: any) => item.name === "href",
 		)?.value;
 
 		if (!specsLink) return reject({ message: "Unable to find the specs page", code: 404 });
@@ -66,7 +66,7 @@ const scrapeAMD = async (model: string, noCache: boolean) =>
 				headers: {
 					"Content-Type": "application/json",
 				},
-			}
+			},
 		);
 
 		if (process.env.NODE_ENV === "development") console.log("Fetching page: ", `https://www.amd.com${specsLink}`);
@@ -104,13 +104,13 @@ const scrapeAMD = async (model: string, noCache: boolean) =>
 			},
 			graphics:
 				getParameter("Integrated Graphics") === "Yes"
-					? {
-							baseFrequency:
-								getFloatParameter("Graphics Base Frequency") ?? getFloatParameter("Graphics Frequency"),
-							maxFrequency: getFloatParameter("Graphics Max Dynamic Frequency"),
-							displays: getFloatParameter("Max # of Displays Supported"),
-					  }
-					: false,
+				? {
+						baseFrequency:
+							getFloatParameter("Graphics Base Frequency") ?? getFloatParameter("Graphics Frequency"),
+						maxFrequency: getFloatParameter("Graphics Max Dynamic Frequency"),
+						displays: getFloatParameter("Max # of Displays Supported"),
+					}
+				: false,
 			pcie: getParameter("PCI Express Revision"),
 			source: `https://www.amd.com${specsLink}`,
 			ref: "/cpu/" + model,
@@ -119,7 +119,7 @@ const scrapeAMD = async (model: string, noCache: boolean) =>
 		};
 
 		// if (process.env.NODE_ENV === "production" || req.query["no-cache"] !== undefined)
-		// await redis.json.set(model, "$", cpu as Record<string, any>);
+		await redis.json.set(model, "$", cpu as Record<string, any>);
 		resolve(cpu);
 	});
 
