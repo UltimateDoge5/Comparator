@@ -176,7 +176,6 @@ export const getMemoryDetails = (testObj?: {
 	// If there is only one type of memory, return it
 	if (speeds.split("\n").length === 1) {
 		const [type, speed] = speeds.split("-");
-
 		return [
 			{
 				type,
@@ -185,20 +184,18 @@ export const getMemoryDetails = (testObj?: {
 		];
 	}
 
-	const result: Memory["types"] = [];
-
 	// I don't remember why I did this, but im assuming amd did weird things ¯\_(ツ)_/¯
-	speeds.match(/.*DDR\d?.-(\d{4})/gm)?.forEach((match) => {
-		const [type, speed] = match.split("-");
-		const speedInt = parseInt(speed);
+	return (
+		speeds.match(/.*DDR\d?.-(\d{4})/gm)?.map((match) => {
+			const [type, speed] = match.split("-");
+			const speedInt = parseInt(speed);
 
-		result.push({
-			type: type.trim(),
-			speed: speedInt,
-		});
-	});
-
-	return result;
+			return {
+				type: type.trim(),
+				speed: speedInt,
+			};
+		}) ?? []
+	);
 };
 
 export default scrapeAMD;

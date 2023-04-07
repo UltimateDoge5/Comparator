@@ -81,7 +81,7 @@ const scrapeIntel = async (model: string, noCache: boolean) =>
 		let cpuName = getParameter("Processor Number") ?? $(".headline").first().text().trim();
 		if (!cpuName?.includes("Intel")) cpuName = "Intel " + cpuName;
 
-		model = model.replace(/ /g, "-").toLowerCase()
+		model = model.replace(/ /g, "-").toLowerCase();
 
 		cpu = {
 			name: cpuName,
@@ -106,14 +106,15 @@ const scrapeIntel = async (model: string, noCache: boolean) =>
 				types: getMemoryDetails(),
 				maxSize: getFloatParameter("Max Memory Size"),
 			},
-			graphics: cpuName?.includes("F") ? false
-			                                 : {
-					baseFrequency: getFloatParameter("Graphics Base Frequency"),
-					maxFrequency: getFloatParameter("Graphics Max Dynamic Frequency"),
-					displays:
-						getFloatParameter("Max # of Displays Supported") ??
-						getFloatParameter("# of Displays Supported"),
-				},
+			graphics: cpuName?.includes("F")
+				? false
+				: {
+						baseFrequency: getFloatParameter("Graphics Base Frequency"),
+						maxFrequency: getFloatParameter("Graphics Max Dynamic Frequency"),
+						displays:
+							getFloatParameter("Max # of Displays Supported") ??
+							getFloatParameter("# of Displays Supported"),
+				  },
 			pcie: getParameter("PCI Express Revision"),
 			source: url,
 			ref: "/cpu/intel-" + model,
@@ -168,7 +169,7 @@ const getMemoryDetails = (): Memory["types"] => {
 
 				return { type: type, speed: parseInt(speed) };
 			})
-			.filter((mem) => mem !== null);
+			.filter((mem) => mem !== null) as Memory["types"];
 	}
 
 	memory = memory.replaceAll(/@.*/g, "").replaceAll(", ", ",").trim().replaceAll(" ", "-");

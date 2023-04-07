@@ -57,14 +57,17 @@ test("Memory variant no.2", () => {
 test("Memory variant no.3", () => {
 	const result = getMemoryDetails({
 		memory: `
+        DDR5 (FP7r2)
+        LPDDR5/x (FP7, FP8)
+        `,
+		sysMemSpecs: null,
+		maxMemSpeeds: `
         4x2R
         DDR5-5600
 
         4x2R
         LPDDR5x-7500
         `,
-		sysMemSpecs: null,
-		maxMemSpeeds: "DDR5-5600",
 	});
 
 	expect(result).toEqual([
