@@ -34,7 +34,7 @@ const scrapeAMD = async (model: string, noCache: boolean) =>
 				headers: {
 					"Content-Type": "application/json",
 				},
-			},
+			}
 		);
 
 		if (process.env.NODE_ENV === "development") console.log("Fetching page: ", url);
@@ -72,22 +72,22 @@ const scrapeAMD = async (model: string, noCache: boolean) =>
 			},
 			graphics:
 				getParameter("Integrated Graphics") === "Yes"
-				? {
-						baseFrequency:
-							getFloatParameter("Graphics Base Frequency") ?? getFloatParameter("Graphics Frequency"),
-						maxFrequency: getFloatParameter("Graphics Max Dynamic Frequency"),
-						displays: getFloatParameter("Max # of Displays Supported"),
-					}
-				: false,
+					? {
+							baseFrequency:
+								getFloatParameter("Graphics Base Frequency") ?? getFloatParameter("Graphics Frequency"),
+							maxFrequency: getFloatParameter("Graphics Max Dynamic Frequency"),
+							displays: getFloatParameter("Max # of Displays Supported"),
+					  }
+					: false,
 			pcie: getParameter("PCI Express Revision"),
 			source: url,
-			ref: "/cpu/" + model,
+			ref: "/cpu/" + model.replace(/ /g, "-"),
 			scrapedAt: new Date(),
 			schemaVer: 1.2,
 		};
 
 		// if (process.env.NODE_ENV === "production" || req.query["no-cache"] !== undefined)
-		await redis.json.set(model.replace(/ /g,"-"), "$", cpu as Record<string, any>);
+		await redis.json.set(model.replace(/ /g, "-"), "$", cpu as Record<string, any>);
 		resolve(cpu);
 	});
 
@@ -129,8 +129,12 @@ const getLaunchDate = (string: string) => {
 	return `Q${quarter}'${date.getFullYear().toString().substring(2)}`;
 };
 
-const getMemoryDetails = (): Memory["types"] => {
-	const memory = getParameter("System Memory Type");
+export const getMemoryDetails = (testObj?: {
+	memory: string | null;
+	sysMemSpecs: number | null;
+	maxMemSpeeds: string | null;
+}): Memory["types"] => {
+	const memory = testObj?.memory ?? getParameter("System Memory Type");
 	if (!memory) return [];
 
 	// Example:
@@ -148,38 +152,53 @@ const getMemoryDetails = (): Memory["types"] => {
 					speed: parseInt(speed.trim().replace("Up to", "")),
 				};
 			})
-			.filter((type) => type);
+			.filter((type) => type !== null) as Memory["types"];
 	}
 
 	// Example:
 	// System Memory Type: DDR4
 	// System Memory Specification: Up to 2667MHz
-	const speed = getFloatParameter("System Memory Specification", false);
+	const speed = testObj?.sysMemSpecs ?? getFloatParameter("System Memory Specification", false);
 	if (speed) {
 		return [
 			{
 				type: memory,
-				speed: speed,
+				speed,
 			},
 		];
 	}
 
-	const speeds = elementSelector($, ".field__label", "Max Memory Speed")?.parent().find(".key__values").text().trim();
+	const speeds =
+		testObj?.maxMemSpeeds ??
+		elementSelector($, ".field__label", "Max Memory Speed")?.parent().find(".key__values").text().trim();
 	if (!speeds) return [];
 
-	let maxSpeed = 0;
+	// If there is only one type of memory, return it
+	if (speeds.split("\n").length === 1) {
+		const [type, speed] = speeds.split("-");
 
-	speeds.match(/DDR\d-(\d{4})/gm)?.forEach((match) => {
-		const speed = parseInt(match.split("-")?.pop() ?? "");
-		if (speed > maxSpeed) maxSpeed = speed;
+		return [
+			{
+				type,
+				speed: parseInt(speed),
+			},
+		];
+	}
+
+	const result: Memory["types"] = [];
+
+	// I don't remember why I did this, but im assuming amd did weird things ¯\_(ツ)_/¯
+	speeds.match(/.*DDR\d?.-(\d{4})/gm)?.forEach((match) => {
+		const [type, speed] = match.split("-");
+		const speedInt = parseInt(speed);
+
+		result.push({
+			type: type.trim(),
+			speed: speedInt,
+		});
 	});
 
-	return [
-		{
-			type: memory,
-			speed: maxSpeed,
-		},
-	];
+	return result;
 };
 
 export default scrapeAMD;

@@ -28,10 +28,10 @@ interface Cores {
 }
 
 interface Memory {
-	types: ({
+	types: {
 		speed: number;
 		type: string;
-	} | null)[];
+	}[];
 	maxSize: number | null;
 }
 
@@ -48,4 +48,4 @@ export const Manufacturer = {
 	AMD: "amd",
 } as const;
 
-export type Manufacturer = typeof Manufacturer[keyof typeof Manufacturer];
+export type Manufacturer = (typeof Manufacturer)[keyof typeof Manufacturer];

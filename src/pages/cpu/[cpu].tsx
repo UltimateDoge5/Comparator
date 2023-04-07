@@ -102,7 +102,7 @@ const RenderTable = ({ cpu, list }: { cpu: CPU; list: Table }) => (
 				<h2
 					className={`relative -left-4 ${i === 0 ? "mt-2" : "mt-4"} mb-1 border-b ${
 						cpu.manufacturer === "intel" ? "border-blue-500" : "border-red-500"
-					} px-2 text-3xl font-light`}
+					} px-2 pb-0.5 text-3xl font-light`}
 				>
 					{key}
 				</h2>

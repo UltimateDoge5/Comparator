@@ -11,12 +11,9 @@ let $: CheerioAPI;
 
 const scrapeIntel = async (model: string, noCache: boolean) =>
 	new Promise<CPU>(async (resolve, reject) => {
-		let cpu: CPU | null = !noCache ? (await redis.json.get(`intel-${model}`, "$"))?.[0] : null;
+		let cpu: CPU | null = !noCache ? (await redis.json.get(`intel-${model.replace(/ /g, "-")}`, "$"))?.[0] : null;
 
-		if (cpu !== null && cpu?.schemaVer >= parseFloat(process.env.MIN_SCHEMA_VERSION || "1.1")) {
-			cpu.ref = "/cpu/intel " + model;
-			return resolve(cpu);
-		}
+		if (cpu !== null && cpu?.schemaVer >= parseFloat(process.env.MIN_SCHEMA_VERSION || "1.2")) return resolve(cpu);
 
 		const token = (await redis.get<string>("intel-token")) ?? (await refreshToken());
 
@@ -83,6 +80,8 @@ const scrapeIntel = async (model: string, noCache: boolean) =>
 
 		let cpuName = getParameter("Processor Number") ?? $(".headline").first().text().trim();
 		if (!cpuName?.includes("Intel")) cpuName = "Intel " + cpuName;
+
+		model = model.replace(/ /g, "-").toLowerCase()
 
 		cpu = {
 			name: cpuName,

@@ -22,12 +22,14 @@ const Comparison = ({ cpus }: { cpus: [CPU, CPU] }) => {
 							render: "Price for " + cpu.name + " loaded",
 							type: "success",
 							autoClose: 2500,
+							isLoading: false,
 						});
 					} else {
 						toast.update($toast, {
 							render: "Failed to load price for " + cpu.name,
 							type: "error",
 							autoClose: 2500,
+							isLoading: false,
 						});
 					}
 				}
@@ -53,7 +55,11 @@ const Comparison = ({ cpus }: { cpus: [CPU, CPU] }) => {
 									className="p-2 text-left underline transition-colors hover:text-white"
 									key={cpu.name}
 								>
-									<Link href={`/cpu/${cpu.name}`} target="_blank" rel="noreferrer">
+									<Link
+										href={cpu?.ref ?? `/cpu/${cpu.name?.replace(/ /g, "-")}`}
+										target="_blank"
+										rel="noreferrer"
+									>
 										{cpu.name}
 									</Link>
 								</th>
