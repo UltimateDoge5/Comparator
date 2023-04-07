@@ -43,7 +43,7 @@ const Cpu = ({ data }: InferGetServerSidePropsType<typeof getServerSideProps>) =
 
 	const refreshCPU = async () => {
 		setRefetch(true);
-		const result = await fetch(`/api/cpu/${data.manufacturer}/${data.name}`);
+		const result = await fetch(`/api/cpu/${data.manufacturer}?model=${data.name}&no-cache`);
 
 		if (!result.ok) {
 			toast.error(
@@ -102,7 +102,7 @@ const RenderTable = ({ cpu, list }: { cpu: CPU; list: Table }) => (
 				<h2
 					className={`relative -left-4 ${i === 0 ? "mt-2" : "mt-4"} mb-1 border-b ${
 						cpu.manufacturer === "intel" ? "border-blue-500" : "border-red-500"
-					} px-2 text-3xl font-light`}
+					} px-2 pb-0.5 text-3xl font-light`}
 				>
 					{key}
 				</h2>
@@ -136,7 +136,7 @@ const RenderTable = ({ cpu, list }: { cpu: CPU; list: Table }) => (
 										{currentRow.title}
 										{currentRow.tooltip !== undefined && <Tooltip tip={currentRow.tooltip} />}
 									</span>
-									<span >
+									<span>
 										{currentRow.prefix !== false
 										 ? formatNumber(value, currentRow.unit)
 										 : value + currentRow.unit}
@@ -231,7 +231,7 @@ const TableStructure: Table = {
 			path: "MSRP",
 			type: "number",
 			unit: "$",
-			tooltip: "Manufacturer's suggested retail price",
+			tooltip: "Manufacturer's suggested retail price.",
 		},
 	},
 	"CPU specifications": {
@@ -326,18 +326,18 @@ type Row = { title: string; hideOnUndefined?: true, tooltip?: string } & ( // Pr
 
 const traversePath = (path: string, obj: any) => path.split(".").reduce((prev, curr) => prev && prev[curr], obj);
 
-export const getServerSideProps: GetServerSideProps<{ data: CPU }> = async ({ req, params }) => {
+export const getServerSideProps: GetServerSideProps<{ data: CPU }> = async ({ params }) => {
 	if (!params?.cpu) {
 		return {
 			notFound: true,
-		}
+		};
 	}
 
-	let model = params?.cpu as string;
-	const manufacturer = model?.split(" ")[0] as "intel" | "amd";
+	let model = (params?.cpu as string).toLowerCase();
+	const manufacturer = model.includes("intel") ? "intel" : model.includes("amd") ? "amd" : undefined;
 	if (process.env.NODE_ENV === "development") console.log(model, manufacturer);
 
-	if (!manufacturer || !model || !["intel", "amd"].includes(manufacturer)) {
+	if (!manufacturer) {
 		return {
 			notFound: true,
 		};
@@ -358,6 +358,6 @@ export const getServerSideProps: GetServerSideProps<{ data: CPU }> = async ({ re
 	return {
 		props: { data: result },
 	};
-}
+};
 
 export default Cpu;

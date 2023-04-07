@@ -11,12 +11,9 @@ let $: CheerioAPI;
 
 const scrapeIntel = async (model: string, noCache: boolean) =>
 	new Promise<CPU>(async (resolve, reject) => {
-		let cpu: CPU | null = !noCache ? (await redis.json.get(`intel-${model}`, "$"))?.[0] : null;
+		let cpu: CPU | null = !noCache ? (await redis.json.get(`intel-${model.replace(/ /g, "-")}`, "$"))?.[0] : null;
 
-		if (cpu !== null && cpu?.schemaVer >= parseFloat(process.env.MIN_SCHEMA_VERSION || "1.1")) {
-			cpu.ref = "/cpu/intel " + model;
-			return resolve(cpu);
-		}
+		if (cpu !== null && cpu?.schemaVer >= parseFloat(process.env.MIN_SCHEMA_VERSION || "1.2")) return resolve(cpu);
 
 		const token = (await redis.get<string>("intel-token")) ?? (await refreshToken());
 
@@ -33,13 +30,13 @@ const scrapeIntel = async (model: string, noCache: boolean) =>
 			}),
 		});
 
-		if (query.status === 401) {
+		if (query.status === 401 || query.status === 419) {
 			const token = await refreshToken();
 			query = await fetch("https://platform.cloud.coveo.com/rest/search/v2?f:@tabfilter=[Products]", {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
-					Authorization: "Bearer" + token,
+					Authorization: "Bearer " + token,
 				},
 				body: JSON.stringify({
 					q: model,
@@ -84,6 +81,8 @@ const scrapeIntel = async (model: string, noCache: boolean) =>
 		let cpuName = getParameter("Processor Number") ?? $(".headline").first().text().trim();
 		if (!cpuName?.includes("Intel")) cpuName = "Intel " + cpuName;
 
+		model = model.replace(/ /g, "-").toLowerCase();
+
 		cpu = {
 			name: cpuName,
 			manufacturer: "intel",
@@ -107,17 +106,18 @@ const scrapeIntel = async (model: string, noCache: boolean) =>
 				types: getMemoryDetails(),
 				maxSize: getFloatParameter("Max Memory Size"),
 			},
-			graphics: cpuName?.includes("F") ? false
+			graphics: cpuName?.includes("F")
+				? false
 				: {
-					baseFrequency: getFloatParameter("Graphics Base Frequency"),
-					maxFrequency: getFloatParameter("Graphics Max Dynamic Frequency"),
-					displays:
-						getFloatParameter("Max # of Displays Supported") ??
-						getFloatParameter("# of Displays Supported"),
-				},
+						baseFrequency: getFloatParameter("Graphics Base Frequency"),
+						maxFrequency: getFloatParameter("Graphics Max Dynamic Frequency"),
+						displays:
+							getFloatParameter("Max # of Displays Supported") ??
+							getFloatParameter("# of Displays Supported"),
+				  },
 			pcie: getParameter("PCI Express Revision"),
 			source: url,
-			ref: "/cpu/intel " + model,
+			ref: "/cpu/intel-" + model,
 			scrapedAt: new Date(),
 			schemaVer: 1.2,
 		};
@@ -169,7 +169,7 @@ const getMemoryDetails = (): Memory["types"] => {
 
 				return { type: type, speed: parseInt(speed) };
 			})
-			.filter((mem) => mem !== null);
+			.filter((mem) => mem !== null) as Memory["types"];
 	}
 
 	memory = memory.replaceAll(/@.*/g, "").replaceAll(", ", ",").trim().replaceAll(" ", "-");

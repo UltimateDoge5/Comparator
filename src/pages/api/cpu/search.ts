@@ -10,9 +10,9 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 	if (q === undefined) q = "";
 
 	// Get 5 cpus matching the query
-	const names = INTEL_PRODUCTS.concat(
-		AMD_PRODUCTS.map((p) => (p.split("/").pop() as string).toLowerCase().replaceAll("-", " "))
-	).filter((cpu) => cpu.toLowerCase().includes(q.toLowerCase().trim()));
+	const names = INTEL_PRODUCTS
+		.concat(AMD_PRODUCTS.map((p) => p.name))
+		.filter((cpu) => cpu.toLowerCase().includes(q.toLowerCase().trim())).map((cpu) => cpu.toLowerCase());
 
 	const remainingItems = Math.max(names.length - parseInt(p) * 5, 0);
 

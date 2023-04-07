@@ -13,15 +13,15 @@ test("Intel cpu - no cache", async () => {
 });
 
 test("AMD cpu - cache", async () => {
-	const cpu = await scrapeAMD("amd-ryzen-5-3600", false);
+	const cpu = await scrapeAMD("amd ryzen 5 3600", false);
 	expect(cpu != null).toBe(true);
 });
 
 test(
 	"AMD cpu - no cache",
 	async () => {
-		const cpu = await scrapeAMD("amd-ryzen-7-5800h", true);
+		const cpu = await scrapeAMD("amd ryzen 5 3600", true);
 		expect(cpu != null).toBe(true);
 	},
-	{ timeout: 15000 }
+	{ timeout: 10000 }
 );

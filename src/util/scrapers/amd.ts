@@ -12,46 +12,14 @@ const redis = Redis.fromEnv();
 
 const scrapeAMD = async (model: string, noCache: boolean) =>
 	new Promise<CPU>(async (resolve, reject) => {
-		let cpu: CPU | null = !noCache ? (await redis.json.get(model, "$"))?.[0] : null;
-		if (cpu !== null && cpu?.schemaVer >= parseFloat(process.env.MIN_SCHEMA_VERSION || "1.1")) {
-			return resolve(cpu);
+		let cpu: CPU | null = !noCache ? (await redis.json.get(model.replace(/ /g, "-"), "$"))?.[0] : null;
+		if (cpu !== null && cpu?.schemaVer >= parseFloat(process.env.MIN_SCHEMA_VERSION || "1.1")) return resolve(cpu);
+
+		const url = AMD_PRODUCTS.find((item) => item.name.replace("™", "").toLowerCase() === model)?.url;
+		if (!url) {
+			console.error("CPU not found:", model);
+			return reject({ message: "CPU not found", code: 404 });
 		}
-
-		const url = AMD_PRODUCTS.find((item) => item.split("/").pop() === model);
-
-		if (!url) return reject({ message: "CPU not found", code: 404 });
-
-		// Get the product page, and find the link to specs page
-		const productPage = await fetch(
-			`https://${process.env.BROWSERLESS_URL}/scrape?token=${process.env.BROWSERLESS_TOKEN}`,
-			{
-				method: "POST",
-				body: JSON.stringify({
-					url: `https://www.amd.com${url}`,
-					userAgent:
-						"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.125 Safari/537.36",
-					elements: [
-						{
-							selector: ".full_specs_link a",
-						},
-					],
-				}),
-				headers: {
-					"Content-Type": "application/json",
-				},
-			},
-		);
-
-		if (productPage.status !== 200) {
-			console.error(productPage.statusText);
-			return reject({ message: "Error while fetching the product page", code: 500 });
-		}
-
-		const specsLink = (await productPage.json())?.data[0]?.results[0]?.attributes?.find(
-			(item: any) => item.name === "href",
-		)?.value;
-
-		if (!specsLink) return reject({ message: "Unable to find the specs page", code: 404 });
 
 		//Get the specs page
 		const specsPage = await fetch(
@@ -59,17 +27,17 @@ const scrapeAMD = async (model: string, noCache: boolean) =>
 			{
 				method: "POST",
 				body: JSON.stringify({
-					url: `https://www.amd.com${specsLink}`,
+					url: url,
 					userAgent:
 						"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.125 Safari/537.36",
 				}),
 				headers: {
 					"Content-Type": "application/json",
 				},
-			},
+			}
 		);
 
-		if (process.env.NODE_ENV === "development") console.log("Fetching page: ", `https://www.amd.com${specsLink}`);
+		if (process.env.NODE_ENV === "development") console.log("Fetching page: ", url);
 
 		if (specsPage.status !== 200) {
 			console.error(specsPage.statusText);
@@ -104,22 +72,22 @@ const scrapeAMD = async (model: string, noCache: boolean) =>
 			},
 			graphics:
 				getParameter("Integrated Graphics") === "Yes"
-				? {
-						baseFrequency:
-							getFloatParameter("Graphics Base Frequency") ?? getFloatParameter("Graphics Frequency"),
-						maxFrequency: getFloatParameter("Graphics Max Dynamic Frequency"),
-						displays: getFloatParameter("Max # of Displays Supported"),
-					}
-				: false,
+					? {
+							baseFrequency:
+								getFloatParameter("Graphics Base Frequency") ?? getFloatParameter("Graphics Frequency"),
+							maxFrequency: getFloatParameter("Graphics Max Dynamic Frequency"),
+							displays: getFloatParameter("Max # of Displays Supported"),
+					  }
+					: false,
 			pcie: getParameter("PCI Express Revision"),
-			source: `https://www.amd.com${specsLink}`,
-			ref: "/cpu/" + model,
+			source: url,
+			ref: "/cpu/" + model.replace(/ /g, "-"),
 			scrapedAt: new Date(),
 			schemaVer: 1.2,
 		};
 
 		// if (process.env.NODE_ENV === "production" || req.query["no-cache"] !== undefined)
-		await redis.json.set(model, "$", cpu as Record<string, any>);
+		await redis.json.set(model.replace(/ /g, "-"), "$", cpu as Record<string, any>);
 		resolve(cpu);
 	});
 
@@ -161,8 +129,12 @@ const getLaunchDate = (string: string) => {
 	return `Q${quarter}'${date.getFullYear().toString().substring(2)}`;
 };
 
-const getMemoryDetails = (): Memory["types"] => {
-	const memory = getParameter("System Memory Type");
+export const getMemoryDetails = (testObj?: {
+	memory: string | null;
+	sysMemSpecs: number | null;
+	maxMemSpeeds: string | null;
+}): Memory["types"] => {
+	const memory = testObj?.memory ?? getParameter("System Memory Type");
 	if (!memory) return [];
 
 	// Example:
@@ -180,38 +152,50 @@ const getMemoryDetails = (): Memory["types"] => {
 					speed: parseInt(speed.trim().replace("Up to", "")),
 				};
 			})
-			.filter((type) => type);
+			.filter((type) => type !== null) as Memory["types"];
 	}
 
 	// Example:
 	// System Memory Type: DDR4
 	// System Memory Specification: Up to 2667MHz
-	const speed = getFloatParameter("System Memory Specification", false);
+	const speed = testObj?.sysMemSpecs ?? getFloatParameter("System Memory Specification", false);
 	if (speed) {
 		return [
 			{
 				type: memory,
-				speed: speed,
+				speed,
 			},
 		];
 	}
 
-	const speeds = elementSelector($, ".field__label", "Max Memory Speed")?.parent().find(".key__values").text().trim();
+	const speeds =
+		testObj?.maxMemSpeeds ??
+		elementSelector($, ".field__label", "Max Memory Speed")?.parent().find(".key__values").text().trim();
 	if (!speeds) return [];
 
-	let maxSpeed = 0;
+	// If there is only one type of memory, return it
+	if (speeds.split("\n").length === 1) {
+		const [type, speed] = speeds.split("-");
+		return [
+			{
+				type,
+				speed: parseInt(speed),
+			},
+		];
+	}
 
-	speeds.match(/DDR\d-(\d{4})/gm)?.forEach((match) => {
-		const speed = parseInt(match.split("-")?.pop() ?? "");
-		if (speed > maxSpeed) maxSpeed = speed;
-	});
+	// I don't remember why I did this, but im assuming amd did weird things ¯\_(ツ)_/¯
+	return (
+		speeds.match(/.*DDR\d?.-(\d{4})/gm)?.map((match) => {
+			const [type, speed] = match.split("-");
+			const speedInt = parseInt(speed);
 
-	return [
-		{
-			type: memory,
-			speed: maxSpeed,
-		},
-	];
+			return {
+				type: type.trim(),
+				speed: speedInt,
+			};
+		}) ?? []
+	);
 };
 
 export default scrapeAMD;
