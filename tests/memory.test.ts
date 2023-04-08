@@ -4,10 +4,8 @@ import { getMemoryDetails } from "../src/util/scrapers/amd";
 /**
  *  System Memory Type  DDR4 - Up to 3200MHz
  *                      LPDDR4 - Up to 4266MHz
- *
  * Source {@link https://www.amd.com/en/product/10821}
  */
-
 test("Memory variant no.1", () => {
 	const result = getMemoryDetails({
 		memory: `
@@ -30,13 +28,11 @@ test("Memory variant no.1", () => {
 });
 
 /**
- * System Memory Type   DDR4
+ * System Memory Type   		DDR4
  * System Memory Specification  Up to 2667MHz
  * Source {@link https://www.amd.com/en/product/8456}
  */
 test("Memory variant no.2", () => {
-	// System Memory Type: DDR4
-	// System Memory Specification: Up to 2667MHz
 	const result = getMemoryDetails({ memory: "DDR4", sysMemSpecs: 2667, maxMemSpeeds: null });
 
 	expect(result).toEqual([

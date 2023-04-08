@@ -118,12 +118,12 @@ const scrapeIntel = async (model: string, noCache: boolean) =>
 			pcie: getParameter("PCI Express Revision"),
 			source: url,
 			ref: "/cpu/intel-" + model,
-			scrapedAt: new Date(),
+			scrapedAt: new Date().toString(),
 			schemaVer: 1.2,
 		};
 
 		// if (process.env.NODE_ENV === "production" || req.query["no-cache"] !== undefined)
-		await redis.json.set(`intel-${model}`, "$", cpu as Record<string, any>);
+		if (process.env.NODE_ENV !== "test") await redis.json.set(`intel-${model}`, "$", cpu as Record<string, any>);
 		return resolve(cpu);
 	});
 

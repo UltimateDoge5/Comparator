@@ -13,7 +13,7 @@ const Selector = ({ setCPU, urlId }: SelectorProps) => {
 			manufacturer: "intel",
 			model: "",
 			state: "idle",
-		},
+		}
 	);
 
 	const [tempModel, setTempModel] = useState("");
@@ -36,18 +36,15 @@ const Selector = ({ setCPU, urlId }: SelectorProps) => {
 
 		if (barVisible) {
 			let percent = 100;
-			intervalRef.current = window.setInterval(
-				async () => {
-					percent -= 1;
-					if (percent <= 0) {
-						clearInterval(intervalRef.current);
-						// No need to await this
-						setSelection({ model: tempModel, state: "loading" });
-					}
-					setCountdownBarPercent(percent);
-				},
-				35,
-			);
+			intervalRef.current = window.setInterval(async () => {
+				percent -= 1;
+				if (percent <= 0) {
+					clearInterval(intervalRef.current);
+					// No need to await this
+					setSelection({ model: tempModel, state: "loading" });
+				}
+				setCountdownBarPercent(percent);
+			}, 35);
 		}
 
 		return () => window.clearInterval(intervalRef.current);
@@ -78,7 +75,10 @@ const Selector = ({ setCPU, urlId }: SelectorProps) => {
 
 				// Update the URL after successful fetch
 				const url = new URL(window.location.href);
-				url.searchParams.set(urlId, `${encodeURI(selection.manufacturer)}-${encodeURI(selection.model)}`);
+				url.searchParams.set(
+					urlId,
+					`${encodeURI(selection.manufacturer)}-${encodeURI(selection.model.toLowerCase())}`
+				);
 				window.history.pushState({}, "", url.toString());
 
 				setSelection({ state: "success" });
@@ -98,9 +98,7 @@ const Selector = ({ setCPU, urlId }: SelectorProps) => {
 				await fetch(`/api/cpu/tip?manufacturer=${selection.manufacturer}&model=${tempModel}`)
 					.catch(() => setSearchResults([]))
 					.then((res) => res?.json())
-					.then((res) => {
-						setSearchResults(res);
-					});
+					.then((res) => setSearchResults(res));
 			}, 350);
 		}
 	}, [selection, tempModel]);
@@ -116,7 +114,11 @@ const Selector = ({ setCPU, urlId }: SelectorProps) => {
 					fetchCPU(selection.manufacturer, selection.model, true).then((cpu) => {
 						setRefetch(false);
 						if (cpu.error) {
-							toast.error(cpu.error.code === 504 ? "The server is taking too long to respond. Try again later." : cpu.error.text);
+							toast.error(
+								cpu.error.code === 504
+									? "The server is taking too long to respond. Try again later."
+									: cpu.error.text
+							);
 							return;
 						}
 						toast.success("Successfully re-fetched the CPU!");
@@ -136,10 +138,11 @@ const Selector = ({ setCPU, urlId }: SelectorProps) => {
 			</button>
 		);
 	};
+
 	return (
 		<div
 			className={`relative flex items-center gap-3 rounded-md border p-4 transition-colors ${getMarkings(
-				selection.state,
+				selection.state
 			)}`}
 		>
 			<select

@@ -48,6 +48,8 @@ const scrapeAMD = async (model: string, noCache: boolean) =>
 		// eslint-disable-next-line prefer-const
 		$ = load(await specsPage.text());
 
+		model = model.replace(/ /g, "-").toLowerCase();
+
 		cpu = {
 			name: $(".section-title").text().trim(),
 			manufacturer: "amd",
@@ -81,13 +83,12 @@ const scrapeAMD = async (model: string, noCache: boolean) =>
 					: false,
 			pcie: getParameter("PCI Express Revision"),
 			source: url,
-			ref: "/cpu/" + model.replace(/ /g, "-"),
-			scrapedAt: new Date(),
+			ref: "/cpu/" + model,
+			scrapedAt: new Date().toString(),
 			schemaVer: 1.2,
 		};
 
-		// if (process.env.NODE_ENV === "production" || req.query["no-cache"] !== undefined)
-		await redis.json.set(model.replace(/ /g, "-"), "$", cpu as Record<string, any>);
+		if (process.env.NODE_ENV !== "test") await redis.json.set(model, "$", cpu as Record<string, any>);
 		resolve(cpu);
 	});
 

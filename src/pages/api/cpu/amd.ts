@@ -10,7 +10,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 	}
 
 	model = model.trim().toLowerCase();
-	if (!model.startsWith("amd")) model = `amd-${model}`;
+	if (!model.startsWith("amd")) model = `amd ${model}`;
 
 	const noCache = req.query["no-cache"] !== undefined;
 

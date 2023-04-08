@@ -12,12 +12,9 @@ import scrapeAMD from "../../util/scrapers/amd";
 import scrapeIntel from "../../util/scrapers/intel";
 import Tooltip from "../../components/tooltip";
 
-
-// Upstash Redis doesn't seem to like the experimental-edge runtime
-
-// export const config = {
-// 	runtime: "experimental-edge",
-// };
+export const config = {
+	runtime: "experimental-edge",
+};
 
 const DateFormat = new Intl.DateTimeFormat("en-US", {
 	year: "numeric",
@@ -48,8 +45,8 @@ const Cpu = ({ data }: InferGetServerSidePropsType<typeof getServerSideProps>) =
 		if (!result.ok) {
 			toast.error(
 				result.status === 504
-				? "The server is taking too long to respond. Try again later."
-				: await result.text(),
+					? "The server is taking too long to respond. Try again later."
+					: await result.text()
 			);
 			return;
 		}
@@ -138,8 +135,8 @@ const RenderTable = ({ cpu, list }: { cpu: CPU; list: Table }) => (
 									</span>
 									<span>
 										{currentRow.prefix !== false
-										 ? formatNumber(value, currentRow.unit)
-										 : value + currentRow.unit}
+											? formatNumber(value, currentRow.unit)
+											: value + currentRow.unit}
 									</span>
 								</div>
 							);
@@ -176,10 +173,8 @@ const Cores = ({ cpu }: { cpu: CPU }) => {
 
 	if (cores.performance === null && cores.efficient === null) {
 		return <span>{cores.total}</span>;
-	}
-
-	if (cores.performance === null && cores.efficient !== null) {
-		return <span>{cpu.cores.total}</span>;
+	} else if (cores.total === null) {
+		return <span>Unknown</span>;
 	}
 
 	return (
@@ -252,7 +247,8 @@ const TableStructure: Table = {
 			title: "Cores",
 			type: "component",
 			component: Cores,
-			tooltip: "Displays total amount of cores. For some Intel cpus, it also displays the amount of performance and efficient cores.",
+			tooltip:
+				"Displays total amount of cores. For some Intel cpus, it also displays the amount of performance and efficient cores.",
 		},
 		tdp: {
 			title: "TDP",
@@ -317,12 +313,12 @@ type Table = {
 	[key: string]: Record<string, Row>;
 };
 
-type Row = { title: string; hideOnUndefined?: true, tooltip?: string } & ( // Prefix is whether is to add K, M, G, etc. to the number
+type Row = { title: string; hideOnUndefined?: true; tooltip?: string } & ( // Prefix is whether is to add K, M, G, etc. to the number
 	| { type: "number"; unit: string; prefix?: boolean; path: string }
 	| { type: "component"; component: ({ cpu }: { cpu: CPU }) => JSX.Element }
 	| { type: "string"; capitalize?: true; path: string }
 	| { type: "date"; path: string }
-	);
+);
 
 const traversePath = (path: string, obj: any) => path.split(".").reduce((prev, curr) => prev && prev[curr], obj);
 
