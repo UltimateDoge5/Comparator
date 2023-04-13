@@ -35,13 +35,13 @@ The only con of this approach is, that by simply searching a phrase like `Core`,
 
 ### Problem with AMD
 
-Getting the data for AMD cpus was a bit more tricky. AMD does not have an internal search API, but I discovered an
-endpoint that returns a list with links to all AMD products. The first problem was, not all links contain the name of
-the cpu. The second problem was, that the sites to which the links point to, are **very** inconsistent, as they are more
-of a marketing page. Luckily there is a link to the specification page, which is still not very consistent, but it's
-**much** better.
+Getting the data for AMD cpus was a bit more tricky. AMD does not have an internal search API, but I discovered
+a [page](https://www.amd.com/en/products/specifications/processors) which has all of their cpus embedded in the html
+file itself. I wrote a simple script that extracted the names and their ids that can be used to get directly to their
+specs page.  
+This is better than the earlier solution because we can save ~4 seconds of response time.
 
-The third and the biggest problem was, that AMD doesn't like being fetched by a server. In the end I ended up spinning
+The biggest problem is that AMD doesn't like being fetched by a server. In the end I ended up spinning
 my own instance of
 [Browserless](https://browserless.io) and using it to fetch the data. This is not ideal and adds lots of delay (
 approximately 6-7 seconds), but that's better than nothing.

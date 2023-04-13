@@ -25,10 +25,11 @@ const List = () => {
 		<>
 			<Head>
 				<title>Search for CPUs | PrimeCPU</title>
-				<meta name="description" content="Search for CPUs" />
+				<meta name="description" content="Search for Intel and AMD processors from a wide list." />
+				<meta name="keywords" content="cpu, intel, amd, search, list" />
 			</Head>
 			<Navbar />
-			<div className="mt-6 mb-8 flex min-h-[100vh] w-full flex-col items-center gap-6 text-white">
+			<div className="mb-8 mt-6 flex min-h-[100vh] w-full flex-col items-center gap-6 text-white">
 				<h1 className="text-4xl">Search for CPUs</h1>
 				<input
 					type="search"

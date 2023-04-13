@@ -35,7 +35,8 @@ const Selector = ({ setCPU, urlId }: SelectorProps) => {
 		if (selection.state === "loading") return () => clearInterval(intervalRef.current);
 
 		if (barVisible) {
-			let percent = 100;
+			// The addional 30 is for the delay before the bar starts to decrease for the user
+			let percent = 130;
 			intervalRef.current = window.setInterval(async () => {
 				percent -= 1;
 				if (percent <= 0) {
@@ -43,7 +44,8 @@ const Selector = ({ setCPU, urlId }: SelectorProps) => {
 					// No need to await this
 					setSelection({ model: tempModel, state: "loading" });
 				}
-				setCountdownBarPercent(percent);
+				// Clamp the value to max 100, so the bar doesn't overflow
+				setCountdownBarPercent(Math.min(percent, 100));
 			}, 35);
 		}
 
@@ -222,7 +224,7 @@ const Selector = ({ setCPU, urlId }: SelectorProps) => {
 					style={{ width: countdownBarPercent + "%" }}
 					className={`absolute ${
 						searchTipVisible ? "top-0" : "bottom-0"
-					} left-[2px] -z-10 h-0.5 rounded-full bg-blue-400`}
+					} left-[2px] -z-10 h-0.5 rounded-full bg-blue-400 transition-all duration-[10ms]`}
 				></div>
 			</Transition>
 		</div>

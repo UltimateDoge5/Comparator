@@ -12,9 +12,10 @@ import scrapeAMD from "../../util/scrapers/amd";
 import scrapeIntel from "../../util/scrapers/intel";
 import Tooltip from "../../components/tooltip";
 
-export const config = {
-	runtime: "experimental-edge",
-};
+// Rolling back again to the node runtime, as edge still behaves weirdly on prod
+// export const config = {
+// 	runtime: "experimental-edge",
+// };
 
 const DateFormat = new Intl.DateTimeFormat("en-US", {
 	year: "numeric",
@@ -63,6 +64,13 @@ const Cpu = ({ data }: InferGetServerSidePropsType<typeof getServerSideProps>) =
 					name="description"
 					content={`Here you'll find all the information you need about the ${data.name} processor.`}
 				/>
+				<meta property="og:title" content={title} />
+				<meta
+					property="og:description"
+					content={`Here you'll find all the information you need about the ${data.name} processor.`}
+				/>
+				<meta property="og:type" content="website" />
+				<meta property="og:url" content={`https://comparator.pkozak.org/cpu/${data.name}`} />
 			</Head>
 			<Navbar />
 			<div className="min-h-[90vh] text-white">

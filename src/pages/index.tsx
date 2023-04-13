@@ -7,6 +7,7 @@ import Selector from "../components/selector";
 import { ToastContainer } from "react-toastify";
 import Footer from "../components/footer";
 import Navbar from "../components/navbar";
+import { Transition } from "@headlessui/react";
 
 export default function Index() {
 	const [cpus, setCpus] = useState<[CPU | null, CPU | null]>([null, null]);
@@ -18,13 +19,12 @@ export default function Index() {
 				<title>Compare any CPU you want</title>
 				<meta name="description" content="Comparator lets you compare CPUs and GPUs in an instant!" />
 				<link rel="canonical" href="https://comparator.pkozak.org" />
+				<meta name="keywords" content="cpu, gpu, compare, comparator, intel, amd, tool, app" />
 			</Head>
 
-			<Navbar/>
+			<Navbar />
 			<main
-				className={`flex ${
-					cpusFulfilled ? "min-h-[130vh]" : "min-h-[90vh]"
-				} flex-col items-center gap-4 pt-12 transition-all`}
+				className={`flex flex-col items-center gap-4 pt-12 transition-all`}
 			>
 				<h1 className="text-center text-6xl font-semibold text-white">Compare CPUs</h1>
 				<h2 className="mb-4 px-2 text-center text-2xl text-white">
@@ -37,24 +37,37 @@ export default function Index() {
 					<Selector setCPU={(cpu) => setCpus((prev) => [prev[0], cpu])} urlId="s" />
 				</section>
 				<hr className="h-1 w-2/5 border-gray-500" />
-				<section className="mb-12 flex w-full flex-col items-center p-4 md:w-5/6 lg:w-3/5">
-					<div className="mb-8 hidden w-fit justify-center gap-6 rounded-lg p-2 text-white md:flex">
-						<div className="flex gap-2">
-							<div className="h-6 w-12 rounded bg-green-500" /> Better
+				<section className="mb-12 flex w-full flex-col items-center p-4 pt-0 md:w-5/6 lg:w-3/5">
+					<Transition
+						show={cpusFulfilled}
+						enter="transition-opacity duration-500"
+						enterFrom="opacity-0"
+						enterTo="opacity-100"
+						leave="transition-opacity duration-500"
+						leaveFrom="opacity-100"
+						leaveTo="opacity-0"
+					>
+						<h3 className="pb-2 text-center text-2xl text-white">Table colors</h3>
+						<div className="mb-8 hidden w-fit justify-center gap-6 rounded-lg p-2 text-white md:flex">
+							<div className="flex gap-2">
+								<div className="h-6 w-12 rounded bg-green-500" /> Better
+							</div>
+							<div className="flex gap-2">
+								<div className="h-6 w-12 rounded bg-red-500" /> Worse
+							</div>
+							<div className="flex gap-2">
+								<div className="h-6 w-12 rounded bg-yellow-500" /> Unable to compare
+							</div>
 						</div>
-						<div className="flex gap-2">
-							<div className="h-6 w-12 rounded bg-red-500" /> Worse
-						</div>
-						<div className="flex gap-2">
-							<div className="h-6 w-12 rounded bg-yellow-500" /> Unable to compare
-						</div>
-					</div>
+					</Transition>
 
 					{cpusFulfilled ? (
 						<Comparison cpus={cpus as [CPU, CPU]} />
 					) : (
-						<h3 className="text-center text-xl text-white ">Select two CPUs to compare them</h3>
-					)}
+						 <h3 className="flex items-center gap-2 text-center text-2xl text-white ">
+							 Select two CPUs to compare them
+						 </h3>
+					 )}
 				</section>
 			</main>
 			<Footer />
