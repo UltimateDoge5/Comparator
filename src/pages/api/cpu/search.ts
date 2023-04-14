@@ -6,18 +6,19 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 	// p - page
 	let { q, p } = req.query as { q: string; p: string };
 
-	p = parseInt(p) < 0 ? "0" : p;
+	if (p === undefined) p = "1";
+	const pInt = (parseInt(p) < 1 ? 1 : parseInt(p) - 1); //The app starts at p = 1, but we start at 0
 	if (q === undefined) q = "";
 
 	// Get 5 cpus matching the query
 	const names = INTEL_PRODUCTS
 		.concat(AMD_PRODUCTS.map((p) => p.name))
-		.filter((cpu) => cpu.toLowerCase().includes(q.toLowerCase().trim())).map((cpu) => cpu.toLowerCase());
+		.filter((cpu) => new RegExp(q.trim(), "i").test(cpu));
 
-	const remainingItems = Math.max(names.length - parseInt(p) * 5, 0);
+	const remainingItems = Math.max(names.length - Math.max(pInt, 1) * 5, 0);
 
 	res.status(200).json({
-		names: names.slice(parseInt(p) * 5, parseInt(p) * 5 + 5).map((name) => ({
+		names: names.slice(pInt * 5, pInt * 5 + 5).map((name) => ({
 			model: beautifyNames(name),
 			manufacturer: name.includes("amd") ? "amd" : "intel",
 		})),
