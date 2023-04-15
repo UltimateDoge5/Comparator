@@ -43,6 +43,8 @@ const Cpu = ({ data }: InferGetServerSidePropsType<typeof getServerSideProps>) =
 		setRefetch(true);
 		const result = await fetch(`/api/cpu/${data.manufacturer}?model=${data.name}&no-cache`);
 
+		setRefetch(false);
+
 		if (!result.ok) {
 			toast.error(
 				result.status === 504
@@ -52,7 +54,6 @@ const Cpu = ({ data }: InferGetServerSidePropsType<typeof getServerSideProps>) =
 			return;
 		}
 
-		setRefetch(false);
 		setTimeout(() => window.location.replace(window.location.href + "?r=true"), 100);
 	};
 

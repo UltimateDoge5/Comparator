@@ -34,7 +34,7 @@ const scrapeAMD = async (model: string, noCache: boolean) =>
 				headers: {
 					"Content-Type": "application/json",
 				},
-			}
+			},
 		);
 
 		if (process.env.NODE_ENV === "development") console.log("Fetching page: ", url);
@@ -74,13 +74,13 @@ const scrapeAMD = async (model: string, noCache: boolean) =>
 			},
 			graphics:
 				getParameter("Integrated Graphics") === "Yes"
-					? {
-							baseFrequency:
-								getFloatParameter("Graphics Base Frequency") ?? getFloatParameter("Graphics Frequency"),
-							maxFrequency: getFloatParameter("Graphics Max Dynamic Frequency"),
-							displays: getFloatParameter("Max # of Displays Supported"),
-					  }
-					: false,
+				? {
+						baseFrequency:
+							getFloatParameter("Graphics Base Frequency") ?? getFloatParameter("Graphics Frequency"),
+						maxFrequency: getFloatParameter("Graphics Max Dynamic Frequency"),
+						displays: getFloatParameter("Max # of Displays Supported"),
+					}
+				: false,
 			pcie: getParameter("PCI Express Revision"),
 			source: url,
 			ref: "/cpu/" + model,
@@ -186,17 +186,18 @@ export const getMemoryDetails = (testObj?: {
 	}
 
 	// I don't remember why I did this, but im assuming amd did weird things ¯\_(ツ)_/¯
-	return (
-		speeds.match(/.*DDR\d?.-(\d{4})/gm)?.map((match) => {
-			const [type, speed] = match.split("-");
-			const speedInt = parseInt(speed);
+	const results = speeds.match(/.*DDR\d?.-(\d{4})/gm)?.map((match) => {
+		const [type, speed] = match.split("-");
+		const speedInt = parseInt(speed);
 
-			return {
-				type: type.trim(),
-				speed: speedInt,
-			};
-		}) ?? []
-	);
+		return {
+			type: type.trim(),
+			speed: speedInt,
+		};
+	});
+
+	// Remove duplicates
+	return results?.filter((value, index, self) => self.findIndex((v) => v.type === value.type) === index) ?? [];
 };
 
 export default scrapeAMD;

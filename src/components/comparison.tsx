@@ -170,6 +170,7 @@ const FeatureNames: FeatureList = {
 		title: "TDP",
 		type: "number",
 		unit: "W",
+		reverse: true
 	},
 	lithography: {
 		title: "Lithography",

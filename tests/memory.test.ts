@@ -77,3 +77,31 @@ test("Memory variant no.3", () => {
 		},
 	]);
 });
+
+/**
+ *  System Memory Type  DDR5
+
+ *  Max Memory Speed    2x1R DDR5-5200
+ *                      2x2R DDR5-5200
+ *  Source {@link https://www.amd.com/en/product/13016}
+ */
+test("Memory variant no.4", () => {
+	const result = getMemoryDetails({
+		memory: `DDR5`,
+		sysMemSpecs: null,
+		maxMemSpeeds: `
+        2x1R
+        DDR5-5200
+
+        2x2R
+        DDR5-5200
+        `,
+	});
+
+	expect(result).toEqual([
+		{
+			type: "DDR5",
+			speed: 5200,
+		},
+	]);
+});
