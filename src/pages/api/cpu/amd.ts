@@ -11,7 +11,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
 	model = model.trim().toLowerCase();
 	if (!model.startsWith("amd")) model = `amd ${model}`;
-
+	if(model.includes("-")) model = model.replaceAll("-", " ") // One lonely dash can cause issues
 	const noCache = req.query["no-cache"] !== undefined;
 
 	let error: { code: number; message: string } | undefined;

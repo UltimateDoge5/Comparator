@@ -20,7 +20,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 	res.status(200).json({
 		names: names.slice(pInt * 5, pInt * 5 + 5).map((name) => ({
 			model: beautifyNames(name),
-			manufacturer: name.includes("amd") ? "amd" : "intel",
+			manufacturer: name.toLowerCase().includes("amd") ? "amd" : "intel",
 		})),
 		remainingItems,
 	});

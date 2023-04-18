@@ -40,7 +40,7 @@ const scrapeAMD = async (model: string, noCache: boolean) =>
 		if (process.env.NODE_ENV === "development") console.log("Fetching page: ", url);
 
 		if (specsPage.status !== 200) {
-			console.error(specsPage.statusText);
+			console.error("Error:", specsPage.statusText, specsPage.status);
 			return reject({ message: "Error while fetching the specs page", code: 500 });
 		}
 
@@ -75,10 +75,11 @@ const scrapeAMD = async (model: string, noCache: boolean) =>
 			graphics:
 				getParameter("Integrated Graphics") === "Yes"
 				? {
-						baseFrequency:
-							getFloatParameter("Graphics Base Frequency") ?? getFloatParameter("Graphics Frequency"),
-						maxFrequency: getFloatParameter("Graphics Max Dynamic Frequency"),
-						displays: getFloatParameter("Max # of Displays Supported"),
+						baseFrequency: getFloatParameter("GPU Base") ??
+							getFloatParameter("Graphics Base Frequency") ??
+							getFloatParameter("Graphics Frequency"),
+						maxFrequency: getFloatParameter("Graphics Frequency") ?? getFloatParameter("Graphics Max Dynamic Frequency"),
+						displays: getFloatParameter("Max Displays") ?? getFloatParameter("Max # of Displays Supported"),
 					}
 				: false,
 			pcie: getParameter("PCI Express Revision"),
@@ -121,6 +122,14 @@ const Prefixes = {
 const getLaunchDate = (string: string) => {
 	if (!string) return "Unknown";
 	if (/Q\d \d{4}/.test(string)) return string;
+
+	// 7/2020
+	// https://www.amd.com/en/product/9936
+	if(/\d\/\d{4}/.test(string)) {
+		const [month, year] = string.split("/");
+		const quarter = Math.floor((parseInt(month) + 1) / 3) + 1;
+		return `Q${quarter}'${year.substring(2)}`;
+	}
 
 	const date = new Date(string);
 

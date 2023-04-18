@@ -41,15 +41,14 @@ const Cpu = ({ data }: InferGetServerSidePropsType<typeof getServerSideProps>) =
 
 	const refreshCPU = async () => {
 		setRefetch(true);
-		const result = await fetch(`/api/cpu/${data.manufacturer}?model=${data.name}&no-cache`);
-
+		const result = await fetch(`/api/cpu/${data.manufacturer}?model=${data.ref.split("/").pop()}&no-cache`);
 		setRefetch(false);
 
 		if (!result.ok) {
 			toast.error(
 				result.status === 504
-					? "The server is taking too long to respond. Try again later."
-					: await result.text()
+				? "The server is taking too long to respond. Try again later."
+				: await result.text(),
 			);
 			return;
 		}
@@ -94,8 +93,8 @@ const Cpu = ({ data }: InferGetServerSidePropsType<typeof getServerSideProps>) =
 				<div className="mx-auto mb-12 w-3/5 rounded-md bg-white/20 p-6  text-lg">
 					<RenderTable cpu={data} list={TableStructure} />
 				</div>
+				<ToastContainer autoClose={2500} position="bottom-left" theme="dark" draggable={false} />
 			</div>
-			<ToastContainer autoClose={2500} position="bottom-left" theme="dark" draggable={false} />
 			<Footer />
 		</>
 	);
@@ -103,100 +102,102 @@ const Cpu = ({ data }: InferGetServerSidePropsType<typeof getServerSideProps>) =
 
 const RenderTable = ({ cpu, list }: { cpu: CPU; list: Table }) => (
 	<Fragment>
-		{Object.keys(list).map((key, i) => (
-			<div key={key}>
-				<h2
-					className={`relative -left-4 ${i === 0 ? "mt-2" : "mt-4"} mb-1 border-b ${
-						cpu.manufacturer === "intel" ? "border-blue-500" : "border-red-500"
-					} px-2 pb-0.5 text-3xl font-light`}
-				>
-					{key}
-				</h2>
-				{Object.keys(list[key]).map((row) => {
-					const currentRow = list[key][row];
+		{Object.keys(list)
+			// If there is no graphics, don't show the GPU specifications
+			.filter((key) => !(cpu.graphics === false && key === "GPU specifications"))
+			.map((key, i) => (
+				<div key={key}>
+					<h2
+						className={`relative -left-4 ${i === 0 ? "mt-2" : "mt-4"} mb-1 border-b ${
+							cpu.manufacturer === "intel" ? "border-blue-500" : "border-red-500"
+						} px-2 pb-0.5 text-3xl font-light`}
+					>
+						{key}
+					</h2>
+					{Object.keys(list[key]).map((row, j) => {
+							const currentRow = list[key][row];
 
-					if (currentRow.type === "component") {
-						return (
-							<div key={row} className="grid grid-cols-2 pb-1 text-left">
+							if (currentRow.type === "component") {
+								return (
+									<div key={row} className="grid grid-cols-2 pb-1 text-left">
 								<span className="flex items-center gap-1">
 									{currentRow.title}
 									{currentRow.tooltip !== undefined && <Tooltip tip={currentRow.tooltip} />}
 								</span>
-								{currentRow.component({ cpu })}
+										{currentRow.component({ cpu })}
 							</div>
-						);
-					}
+								);
+							}
 
-					//Get the value from the path
-					const value = traversePath(currentRow.path, cpu);
+							//Get the value from the path
+							const value = traversePath(currentRow.path, cpu);
 
-					//If there is no value, and we want to hide the row, return an empty fragment
-					if ((value === null || value === undefined) && currentRow.hideOnUndefined === true)
-						return <Fragment key={row} />;
-
-					switch (currentRow.type) {
-						case "number":
-							return (
-								<div key={row} className="grid grid-cols-2 pb-1 text-left">
+							//If there is no value, and we want to hide the row, return an empty fragment the categories that are empty
+							if ((value === null || value === undefined) && currentRow.hideOnUndefined === true) { return <Fragment key={row} />;}
+							switch (currentRow.type) {
+								case "number":
+									return (
+										<div key={row} className="grid grid-cols-2 pb-1 text-left">
 									<span className="flex items-center gap-1">
 										{currentRow.title}
 										{currentRow.tooltip !== undefined && <Tooltip tip={currentRow.tooltip} />}
 									</span>
 									<span>
 										{currentRow.prefix !== false
-											? formatNumber(value, currentRow.unit)
-											: value + currentRow.unit}
+										 ? formatNumber(value, currentRow.unit)
+										 : value + currentRow.unit}
 									</span>
 								</div>
-							);
-						case "string":
-							return (
-								<div key={row} className="grid grid-cols-2 text-left">
+									);
+								case "string":
+									return (
+										<div key={row} className="grid grid-cols-2 text-left">
 									<span className="flex items-center gap-1">
 										{currentRow.title}
 										{currentRow.tooltip !== undefined && <Tooltip tip={currentRow.tooltip} />}
 									</span>
 									<span>{currentRow.capitalize === true ? capitalize(value) : value}</span>
 								</div>
-							);
+									);
 
-						case "date":
-							return (
-								<div key={row} className="grid grid-cols-2 text-left">
+								case "date":
+									return (
+										<div key={row} className="grid grid-cols-2 text-left">
 									<span>
 										{currentRow.title}
 										{currentRow.tooltip !== undefined && <Tooltip tip={currentRow.tooltip} />}
 									</span>
 									<span>{DateFormat.format(new Date(value))}</span>
 								</div>
-							);
+									);
+							}
+						},
+					)
 					}
-				})}
-			</div>
-		))}
+						</div>
+			))}
 	</Fragment>
 );
 
 const Cores = ({ cpu }: { cpu: CPU }) => {
-	const cores = cpu.cores;
+		const cores = cpu.cores;
 
-	if (cores.performance === null && cores.efficient === null) {
-		return <span>{cores.total}</span>;
-	} else if (cores.total === null) {
-		return <span>Unknown</span>;
-	}
+		if (cores.performance === null && cores.efficient === null) {
+			return <span>{cores.total}</span>;
+		} else if (cores.total === null) {
+			return <span>Unknown</span>;
+		}
 
-	return (
-		<>
+		return (
+			<>
 			{cpu.cores.performance ?? 0}P / {cpu.cores.efficient ?? 0}E
 		</>
-	);
-};
+		);
+	}
+;
 
 const Memory = ({ cpu }: { cpu: CPU }) => {
-	if (cpu.memory.types === null) {
-		return <>N/A</>;
-	}
+	if (cpu.memory.types === null) return <>N/A</>;
 
 	return (
 		<div>
@@ -285,18 +286,21 @@ const TableStructure: Table = {
 			path: "graphics.baseFrequency",
 			type: "number",
 			unit: "Hz",
+			hideOnUndefined: true,
 		},
 		maxClock: {
 			title: "Max Clock",
 			path: "graphics.maxFrequency",
 			type: "number",
 			unit: "Hz",
+			hideOnUndefined: true,
 		},
 		display: {
 			title: "Displays",
 			path: "graphics.displays",
 			type: "number",
 			unit: "",
+			hideOnUndefined: true,
 		},
 	},
 	Other: {
@@ -327,7 +331,7 @@ type Row = { title: string; hideOnUndefined?: true; tooltip?: string } & ( // Pr
 	| { type: "component"; component: ({ cpu }: { cpu: CPU }) => JSX.Element }
 	| { type: "string"; capitalize?: true; path: string }
 	| { type: "date"; path: string }
-);
+	);
 
 const traversePath = (path: string, obj: any) => path.split(".").reduce((prev, curr) => prev && prev[curr], obj);
 

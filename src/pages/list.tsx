@@ -34,7 +34,12 @@ const List = () => {
 				<input
 					type="search"
 					value={query}
-					onChange={(e) => setQuery(e.target.value)}
+					onChange={(e) => {
+						const params = new URLSearchParams(window.location.search);
+						params.set("q", e.target.value);
+						window.history.replaceState({}, "", `${window.location.pathname}?${params.toString()}`);
+						setQuery(e.target.value)
+					}}
 					className="h-14 w-1/2 rounded-md border border-gray-400 bg-slate-700 p-2 text-xl text-white shadow-lg"
 					placeholder="Search for a CPU"
 				/>
