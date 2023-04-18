@@ -45,11 +45,7 @@ const Cpu = ({ data }: InferGetServerSidePropsType<typeof getServerSideProps>) =
 		setRefetch(false);
 
 		if (!result.ok) {
-			toast.error(
-				result.status === 504
-				? "The server is taking too long to respond. Try again later."
-				: await result.text(),
-			);
+			toast.error(result.status === 504 ? "The server is taking too long to respond. Try again later." : await result.text());
 			return;
 		}
 
@@ -60,10 +56,7 @@ const Cpu = ({ data }: InferGetServerSidePropsType<typeof getServerSideProps>) =
 		<>
 			<Head>
 				<title>{title}</title>
-				<meta
-					name="description"
-					content={`Here you'll find all the information you need about the ${data.name} processor.`}
-				/>
+				<meta name="description" content={`Here you'll find all the information you need about the ${data.name} processor.`} />
 				<meta property="og:title" content={title} />
 				<meta
 					property="og:description"
@@ -73,15 +66,15 @@ const Cpu = ({ data }: InferGetServerSidePropsType<typeof getServerSideProps>) =
 				<meta property="og:url" content={`https://comparator.pkozak.org/cpu/${data.name}`} />
 			</Head>
 			<Navbar />
-			<div className="min-h-[90vh] text-white">
+			<div className="text-white">
 				<div className="my-4 flex justify-center gap-4">
 					<h1 className="text-3xl">{data.name}</h1>
 					<button
 						onClick={refreshCPU}
 						title="Reload data"
 						disabled={data.name === null || refetch}
-						className="rounded-md border border-gray-400/20 bg-gray-400/20 p-2 transition-all
-					enabled:cursor-pointer enabled:hover:bg-gray-200/50 disabled:cursor-not-allowed disabled:opacity-50"
+						className="rounded-md border border-gray-400/20 bg-gray-400/20 p-2 transition-all enabled:cursor-pointer
+						 enabled:hover:bg-gray-200/50 disabled:cursor-not-allowed disabled:opacity-50"
 					>
 						<LazyMotion features={domAnimation}>
 							<m.div style={{ rotate: refetch ? rotate : 0 }}>
@@ -90,7 +83,7 @@ const Cpu = ({ data }: InferGetServerSidePropsType<typeof getServerSideProps>) =
 						</LazyMotion>
 					</button>
 				</div>
-				<div className="mx-auto mb-12 w-3/5 rounded-md bg-white/20 p-6  text-lg">
+				<div className="mx-auto w-full border-0 border-gray-200/50 bg-white/20 p-4 text-lg md:mb-12 md:w-3/5 md:rounded-md md:border md:p-6">
 					<RenderTable cpu={data} list={TableStructure} />
 				</div>
 				<ToastContainer autoClose={2500} position="bottom-left" theme="dark" draggable={false} />
@@ -108,94 +101,89 @@ const RenderTable = ({ cpu, list }: { cpu: CPU; list: Table }) => (
 			.map((key, i) => (
 				<div key={key}>
 					<h2
-						className={`relative -left-4 ${i === 0 ? "mt-2" : "mt-4"} mb-1 border-b ${
-							cpu.manufacturer === "intel" ? "border-blue-500" : "border-red-500"
-						} px-2 pb-0.5 text-3xl font-light`}
+						className={`relative -left-2 md:-left-4 ${i === 0 ? "mt-2" : "mt-4"} mb-1 border-b
+						${cpu.manufacturer === "intel" ? "border-blue-500" : "border-red-500"}
+						px-2 pb-0.5 text-3xl font-light`}
 					>
 						{key}
 					</h2>
 					{Object.keys(list[key]).map((row, j) => {
-							const currentRow = list[key][row];
+						const currentRow = list[key][row];
 
-							if (currentRow.type === "component") {
+						if (currentRow.type === "component") {
+							return (
+								<div key={row} className="grid grid-cols-2 pb-1 text-left">
+									<span className="flex h-fit items-center gap-1">
+										{currentRow.title}
+										{currentRow.tooltip !== undefined && <Tooltip tip={currentRow.tooltip} />}
+									</span>
+									{currentRow.component({ cpu })}
+								</div>
+							);
+						}
+
+						//Get the value from the path
+						const value = traversePath(currentRow.path, cpu);
+
+						//If there is no value, and we want to hide the row, return an empty fragment the categories that are empty
+						if ((value === null || value === undefined) && currentRow.hideOnUndefined === true) return <Fragment key={row} />;
+
+						switch (currentRow.type) {
+							case "number":
 								return (
 									<div key={row} className="grid grid-cols-2 pb-1 text-left">
-								<span className="flex items-center gap-1">
-									{currentRow.title}
-									{currentRow.tooltip !== undefined && <Tooltip tip={currentRow.tooltip} />}
-								</span>
-										{currentRow.component({ cpu })}
-							</div>
+										<span className="flex items-center gap-1">
+											{currentRow.title}
+											{currentRow.tooltip !== undefined && <Tooltip tip={currentRow.tooltip} />}
+										</span>
+										<span>
+											{currentRow.prefix !== false ? formatNumber(value, currentRow.unit) : value + currentRow.unit}
+										</span>
+									</div>
 								);
-							}
+							case "string":
+								return (
+									<div key={row} className="grid grid-cols-2 text-left">
+										<span className="flex items-center gap-1">
+											{currentRow.title}
+											{currentRow.tooltip !== undefined && <Tooltip tip={currentRow.tooltip} />}
+										</span>
+										<span>{currentRow.capitalize === true ? capitalize(value) : value}</span>
+									</div>
+								);
 
-							//Get the value from the path
-							const value = traversePath(currentRow.path, cpu);
-
-							//If there is no value, and we want to hide the row, return an empty fragment the categories that are empty
-							if ((value === null || value === undefined) && currentRow.hideOnUndefined === true) { return <Fragment key={row} />;}
-							switch (currentRow.type) {
-								case "number":
-									return (
-										<div key={row} className="grid grid-cols-2 pb-1 text-left">
-									<span className="flex items-center gap-1">
-										{currentRow.title}
-										{currentRow.tooltip !== undefined && <Tooltip tip={currentRow.tooltip} />}
-									</span>
-									<span>
-										{currentRow.prefix !== false
-										 ? formatNumber(value, currentRow.unit)
-										 : value + currentRow.unit}
-									</span>
-								</div>
-									);
-								case "string":
-									return (
-										<div key={row} className="grid grid-cols-2 text-left">
-									<span className="flex items-center gap-1">
-										{currentRow.title}
-										{currentRow.tooltip !== undefined && <Tooltip tip={currentRow.tooltip} />}
-									</span>
-									<span>{currentRow.capitalize === true ? capitalize(value) : value}</span>
-								</div>
-									);
-
-								case "date":
-									return (
-										<div key={row} className="grid grid-cols-2 text-left">
-									<span>
-										{currentRow.title}
-										{currentRow.tooltip !== undefined && <Tooltip tip={currentRow.tooltip} />}
-									</span>
-									<span>{DateFormat.format(new Date(value))}</span>
-								</div>
-									);
-							}
-						},
-					)
-					}
-						</div>
+							case "date":
+								return (
+									<div key={row} className="grid grid-cols-2 text-left">
+										<span>
+											{currentRow.title}
+											{currentRow.tooltip !== undefined && <Tooltip tip={currentRow.tooltip} />}
+										</span>
+										<span>{DateFormat.format(new Date(value))}</span>
+									</div>
+								);
+						}
+					})}
+				</div>
 			))}
 	</Fragment>
 );
 
 const Cores = ({ cpu }: { cpu: CPU }) => {
-		const cores = cpu.cores;
+	const cores = cpu.cores;
 
-		if (cores.performance === null && cores.efficient === null) {
-			return <span>{cores.total}</span>;
-		} else if (cores.total === null) {
-			return <span>Unknown</span>;
-		}
+	if (cores.performance === null && cores.efficient === null) {
+		return <span>{cores.total}</span>;
+	} else if (cores.total === null) {
+		return <span>Unknown</span>;
+	}
 
-		return (
-			<>
+	return (
+		<>
 			{cpu.cores.performance ?? 0}P / {cpu.cores.efficient ?? 0}E
 		</>
-		);
-	}
-;
-
+	);
+};
 const Memory = ({ cpu }: { cpu: CPU }) => {
 	if (cpu.memory.types === null) return <>N/A</>;
 
@@ -257,8 +245,7 @@ const TableStructure: Table = {
 			title: "Cores",
 			type: "component",
 			component: Cores,
-			tooltip:
-				"Displays total amount of cores. For some Intel cpus, it also displays the amount of performance and efficient cores.",
+			tooltip: "Displays total amount of cores. For some Intel cpus, it also displays the amount of performance and efficient cores.",
 		},
 		tdp: {
 			title: "TDP",
@@ -331,7 +318,7 @@ type Row = { title: string; hideOnUndefined?: true; tooltip?: string } & ( // Pr
 	| { type: "component"; component: ({ cpu }: { cpu: CPU }) => JSX.Element }
 	| { type: "string"; capitalize?: true; path: string }
 	| { type: "date"; path: string }
-	);
+);
 
 const traversePath = (path: string, obj: any) => path.split(".").reduce((prev, curr) => prev && prev[curr], obj);
 

@@ -13,7 +13,7 @@ html::-webkit-scrollbar-thumb {
     border-radius: 10px;
 }
 
-#__next{
+#__next {
     display: grid;
-    grid-template-rows: 64px 1fr 10vh;
+    @apply grid-rows-[64px,1fr,112px] md:grid-rows-[64px,1fr,10vh]
 }

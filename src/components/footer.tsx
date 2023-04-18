@@ -1,8 +1,7 @@
 const Footer = () => (
-	<footer className="flex min-h-[10vh] w-full flex-col items-center gap-x-4 gap-y-2 border-t bg-slate-700/25 py-4 text-center md:flex-row md:justify-center">
+	<footer className="flex h-full w-full flex-col items-center gap-x-4 gap-y-2 border-t bg-slate-700/25 py-4 text-center md:flex-row md:justify-center">
 		<p className="text-white">
 			Made by
-			{/* eslint-disable-next-line react/jsx-no-target-blank */}
 			<a className="text-blue-500" href="https://pkozak.org" target="_blank">
 				{" "}
 				Piotr Kozak

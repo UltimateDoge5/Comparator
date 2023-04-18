@@ -4,6 +4,6 @@
   "plugins": [
     "prettier-plugin-tailwindcss"
   ],
-  "printWidth": 120,
+  "printWidth": 140,
   "trailingComma": "es5"
 }

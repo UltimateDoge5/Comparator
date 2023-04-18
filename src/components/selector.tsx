@@ -13,7 +13,7 @@ const Selector = ({ setCPU, urlId }: SelectorProps) => {
 			manufacturer: "intel",
 			model: "",
 			state: "idle",
-		}
+		},
 	);
 
 	const [tempModel, setTempModel] = useState("");
@@ -35,7 +35,7 @@ const Selector = ({ setCPU, urlId }: SelectorProps) => {
 		if (selection.state === "loading") return () => clearInterval(intervalRef.current);
 
 		if (barVisible) {
-			// The addional 30 is for the delay before the bar starts to decrease for the user
+			// The additional 30 is for the delay before the bar starts to decrease for the user
 			let percent = 130;
 			intervalRef.current = window.setInterval(async () => {
 				percent -= 1;
@@ -79,7 +79,7 @@ const Selector = ({ setCPU, urlId }: SelectorProps) => {
 				const url = new URL(window.location.href);
 				url.searchParams.set(
 					urlId,
-					`${encodeURI(selection.manufacturer)}-${encodeURI(selection.model.toLowerCase())}`
+					`${encodeURI(selection.manufacturer)}-${encodeURI(selection.model.toLowerCase())}`,
 				);
 				window.history.pushState({}, "", url.toString());
 
@@ -118,8 +118,8 @@ const Selector = ({ setCPU, urlId }: SelectorProps) => {
 						if (cpu.error) {
 							toast.error(
 								cpu.error.code === 504
-									? "The server is taking too long to respond. Try again later."
-									: cpu.error.text
+								? "The server is taking too long to respond. Try again later."
+								: cpu.error.text,
 							);
 							return;
 						}
@@ -142,11 +142,7 @@ const Selector = ({ setCPU, urlId }: SelectorProps) => {
 	};
 
 	return (
-		<div
-			className={`relative flex items-center gap-3 rounded-md border p-4 transition-colors ${getMarkings(
-				selection.state
-			)}`}
-		>
+		<div className={`relative flex items-center gap-3 rounded-md border p-4 transition-colors ${getMarkings(selection.state)}`}>
 			<select
 				value={selection.manufacturer}
 				disabled={selection.state === "loading" || refetch}
@@ -175,7 +171,7 @@ const Selector = ({ setCPU, urlId }: SelectorProps) => {
 					onBlur={() => setShowResults(false)}
 					onChange={(e) => setTempModel(e.target.value.trimStart())}
 					placeholder={selection.manufacturer === "intel" ? "Core i5-7400" : "Ryzen 7 5800H"}
-					className="rounded-md bg-gray-200 p-2 disabled:cursor-not-allowed disabled:opacity-75"
+					className="w-48 rounded-md bg-gray-200 p-2 disabled:cursor-not-allowed disabled:opacity-75 sm:w-52"
 				/>
 
 				<Transition
@@ -188,11 +184,7 @@ const Selector = ({ setCPU, urlId }: SelectorProps) => {
 					leaveFrom="opacity-100"
 					leaveTo="opacity-0"
 				>
-					<div
-						className={`absolute top-full z-20 flex w-max rounded-lg bg-white p-2 shadow-md transition-all ${
-							previewPositions[omittedSearch.length - 1]
-						}`}
-					>
+					<div className={`absolute left-5 top-full z-20 flex w-max flex-col rounded-lg bg-white p-2 shadow-md transition-all md:left-0 md:flex-row ${previewPositions[omittedSearch.length - 1]}`}>
 						{omittedSearch.map((result) => (
 							<div
 								key={result}

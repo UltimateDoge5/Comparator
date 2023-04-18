@@ -23,13 +23,9 @@ export default function Index() {
 			</Head>
 
 			<Navbar />
-			<main
-				className={`flex flex-col items-center gap-4 pt-12 transition-all`}
-			>
-				<h1 className="text-center text-6xl font-semibold text-white">Compare CPUs</h1>
-				<h2 className="mb-4 px-2 text-center text-2xl text-white">
-					Search for a CPU and compare it to another one
-				</h2>
+			<main className="flex flex-col items-center gap-4 pt-4 transition-all md:pt-12 ">
+				<h1 className="text-center text-4xl font-semibold text-white md:text-6xl">Compare CPUs</h1>
+				<h2 className="mb-4 px-2 text-center text-xl text-white md:text-2xl">Search for a CPU and compare it to another one</h2>
 
 				<section className="grid grid-cols-1 gap-4 p-2 md:grid-cols-2 md:gap-8">
 					<Selector setCPU={(cpu) => setCpus((prev) => [cpu, prev[1]])} urlId="f" />
@@ -47,8 +43,8 @@ export default function Index() {
 						leaveFrom="opacity-100"
 						leaveTo="opacity-0"
 					>
-						<h3 className="pb-2 text-center text-2xl text-white">Table colors</h3>
-						<div className="mb-8 hidden w-fit justify-center gap-6 rounded-lg p-2 text-white md:flex">
+						<h3 className="hidden pb-2 text-center text-2xl text-white sm:block">Table colors</h3>
+						<div className="mb-8 hidden w-fit justify-center gap-6 rounded-lg p-2 text-white sm:flex">
 							<div className="flex gap-2">
 								<div className="h-6 w-12 rounded bg-green-500" /> Better
 							</div>
@@ -64,10 +60,8 @@ export default function Index() {
 					{cpusFulfilled ? (
 						<Comparison cpus={cpus as [CPU, CPU]} />
 					) : (
-						 <h3 className="flex items-center gap-2 text-center text-2xl text-white ">
-							 Select two CPUs to compare them
-						 </h3>
-					 )}
+						<h3 className="flex items-center gap-2 text-center text-2xl text-white ">Select two CPUs to compare them</h3>
+					)}
 				</section>
 			</main>
 			<Footer />

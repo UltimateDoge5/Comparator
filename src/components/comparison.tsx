@@ -51,15 +51,8 @@ const Comparison = ({ cpus }: { cpus: [CPU, CPU] }) => {
 						<tr className="border-b border-black">
 							<th className="p-2 text-left">Feature</th>
 							{cpus.map((cpu) => (
-								<th
-									className="p-2 text-left underline transition-colors hover:text-white"
-									key={cpu.name}
-								>
-									<Link
-										href={cpu?.ref ?? `/cpu/${cpu.name?.replace(/ /g, "-")}`}
-										target="_blank"
-										rel="noreferrer"
-									>
+								<th className="p-2 text-left underline transition-colors hover:text-white" key={cpu.name}>
+									<Link href={cpu?.ref ?? `/cpu/${cpu.name?.replace(/ /g, "-")}`} target="_blank" rel="noreferrer">
 										{cpu.name}
 									</Link>
 								</th>
@@ -92,8 +85,8 @@ const RenderComparison: (cpus: [CPU, CPU], list: FeatureList, ...keys: string[])
 					return (
 						<tr key={key}>
 							<td>{feature.title}</td>
-							<td>{cpu1[key] as string}</td>
-							<td>{cpu2[key] as string}</td>
+							<td className="text-center md:text-left">{cpu1[key] as string}</td>
+							<td className="text-center md:text-left">{cpu2[key] as string}</td>
 						</tr>
 					);
 				case "number": {
@@ -102,18 +95,14 @@ const RenderComparison: (cpus: [CPU, CPU], list: FeatureList, ...keys: string[])
 					return (
 						<tr key={key}>
 							<td>{feature.title}</td>
-							<td>
+							<td className="text-center md:text-left">
 								<span className={colorDiff(a, b, feature.reverse === true)}>
-									{feature.prefix === false
-										? (a ?? "N/A") + (feature?.unit || "")
-										: formatNumber(a, feature.unit || "")}
+									{feature.prefix === false ? (a ?? "N/A") + (feature?.unit || "") : formatNumber(a, feature.unit || "")}
 								</span>
 							</td>
-							<td>
+							<td className="text-center md:text-left">
 								<span className={colorDiff(a, b, feature.reverse !== true)}>
-									{feature.prefix === false
-										? (b ?? "N/A") + (feature?.unit || "")
-										: formatNumber(b, feature.unit || "")}
+									{feature.prefix === false ? (b ?? "N/A") + (feature?.unit || "") : formatNumber(b, feature.unit || "")}
 								</span>
 							</td>
 						</tr>
@@ -132,7 +121,7 @@ const FeatureNames: FeatureList = {
 			<tr key="cores">
 				<td className="p-2">Cores</td>
 				{cpus.map((cpu, i) => (
-					<td className="p-2" key={cpu.name}>
+					<td className="p-2 text-center md:text-left" key={cpu.name}>
 						<span className={colorDiff(cpu.cores.total, cpus[1 - i].cores.total)}>
 							{cpu.cores.performance !== null && cpu.cores.efficient !== null ? (
 								<>
@@ -170,7 +159,7 @@ const FeatureNames: FeatureList = {
 		title: "TDP",
 		type: "number",
 		unit: "W",
-		reverse: true
+		reverse: true,
 	},
 	lithography: {
 		title: "Lithography",
@@ -183,11 +172,10 @@ const FeatureNames: FeatureList = {
 			<tr key="marketSegment">
 				<td className="p-2">Market Segment</td>
 				{cpus.map((cpu) => {
-					const hidePrice =
-						cpu.marketSegment == "embedded" || (cpu.marketSegment == "mobile" && cpu.manufacturer == "amd");
+					const hidePrice = cpu.marketSegment == "embedded" || (cpu.marketSegment == "mobile" && cpu.manufacturer == "amd");
 					return (
 						<td
-							className={`p-2 ${hidePrice ? "text-center" : ""}`}
+							className={`p-2 ${hidePrice ? "text-center" : "text-center md:text-left"} `}
 							key={cpu.name}
 							rowSpan={hidePrice ? 2 : 1}
 						>
@@ -205,12 +193,11 @@ const FeatureNames: FeatureList = {
 			<tr key="MSRP">
 				<td className="p-2">Price</td>
 				{cpus.map((cpu, i) => {
-					const hidePrice =
-						cpu.marketSegment == "embedded" || (cpu.marketSegment == "mobile" && cpu.manufacturer == "amd");
+					const hidePrice = cpu.marketSegment == "embedded" || (cpu.marketSegment == "mobile" && cpu.manufacturer == "amd");
 					if (hidePrice) return <></>;
 
 					return (
-						<td className="p-2" key={cpu.name}>
+						<td className="p-2 text-center md:text-left" key={cpu.name}>
 							<span className={colorDiff(cpu.MSRP, cpus[1 - i].MSRP, true)} id={"price-" + i}>
 								{formatNumber(cpu.MSRP, "$")}
 							</span>
