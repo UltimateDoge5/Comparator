@@ -1,7 +1,7 @@
 import type { CheerioAPI } from "cheerio";
 import { load } from "cheerio";
 import type { CPU, Memory } from "../../../CPU";
-import { AMD_PRODUCTS } from "../products";
+import { AMD_PRICES, AMD_PRODUCTS } from "../products";
 import { normaliseMarket } from "../formatting";
 import elementSelector from "../selectors";
 import { Redis } from "@upstash/redis";
@@ -30,6 +30,9 @@ const scrapeAMD = async (model: string, noCache: boolean) =>
 					url: url,
 					userAgent:
 						"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.125 Safari/537.36",
+					gotoOptions: {
+						waitUntil: "domcontentloaded",
+					},
 				}),
 				headers: {
 					"Content-Type": "application/json",
@@ -48,12 +51,14 @@ const scrapeAMD = async (model: string, noCache: boolean) =>
 		// eslint-disable-next-line prefer-const
 		$ = load(await specsPage.text());
 
+		// Get the msrp before model name change
+		const msrp = AMD_PRICES[model.replace("amd", "").trim() as keyof typeof AMD_PRICES] || null;
 		model = model.replace(/ /g, "-").toLowerCase();
 
 		cpu = {
 			name: $(".section-title").text().trim(),
 			manufacturer: "amd",
-			MSRP: null,
+			MSRP: msrp,
 			marketSegment: normaliseMarket(getParameter("Platform")),
 			cores: {
 				total: getFloatParameter("# of CPU Cores"),
@@ -123,9 +128,9 @@ const getLaunchDate = (string: string) => {
 	if (!string) return "Unknown";
 	if (/Q\d \d{4}/.test(string)) return string;
 
-	// 7/2020
+	// Format: 7/2020
 	// https://www.amd.com/en/product/9936
-	if(/\d\/\d{4}/.test(string)) {
+	if (/\d\/\d{4}/.test(string)) {
 		const [month, year] = string.split("/");
 		const quarter = Math.floor((parseInt(month) + 1) / 3) + 1;
 		return `Q${quarter}'${year.substring(2)}`;

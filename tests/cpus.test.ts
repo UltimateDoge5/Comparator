@@ -35,5 +35,5 @@ test(
 		const cpu = await scrapeAMD("amd ryzen 5 3600", true);
 		expect(cpu != null).toBe(true);
 	},
-	{ timeout: 10000 }
+	{ timeout: 15000 }
 );

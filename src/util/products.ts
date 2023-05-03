@@ -358,6 +358,51 @@ export const AMD_PRODUCTS = [
 ];
 
 /**
+ * Scraped list of all AMD Ryzen cpu prices from Wikipedia.
+ */
+
+export const AMD_PRICES =
+	{
+		"ryzen 5 1600x": 249,
+		"ryzen 5 1600": 219,
+		"ryzen 5 1500x": 189,
+		"ryzen 5 1400": 169,
+		"ryzen 3 1300x": 129,
+		"ryzen 3 1200": 109,
+		"ryzen 3 2200g": 99,
+		"ryzen 5 2600x": 229,
+		"ryzen 5 2600": 199,
+		"ryzen 5 1600 (af)": 85,
+		"ryzen 7 3800xt": 399,
+		"ryzen 7 3800x": 399,
+		"ryzen 7 3700x": 399,
+		"ryzen 5 3600xt": 399,
+		"ryzen 5 3600x": 399,
+		"ryzen 5 3600": 399,
+		"ryzen 5 3500x": 399,
+		"ryzen 5 3500": 399,
+		"ryzen 3 3300x": 399,
+		"ryzen 3 3100": 399,
+		"ryzen threadripper 3990x": 3990,
+		"ryzen threadripper 3970x": 1999,
+		"ryzen threadripper 3960x": 1399,
+		"ryzen 3 4100": 99,
+		"ryzen 5 4600g": 154,
+		"ryzen 7 5800x3d": 449,
+		"ryzen 7 5800x": 449,
+		"ryzen 7 5700x": 299,
+		"ryzen 5 5600x": 299,
+		"ryzen 5 5600": 299,
+		"ryzen 5 5500": 299,
+		"ryzen 5 5600g": 259,
+		"ryzen 7 7800x3d": 449,
+		"ryzen 7 7700x": 399,
+		"ryzen 7 7700": 329,
+		"ryzen 5 7600x": 299,
+		"ryzen 5 7600": 229,
+	}
+
+/**
  *  Scraped list of all Intel core cpus from Wikipedia.
  */
 export const INTEL_PRODUCTS = [
