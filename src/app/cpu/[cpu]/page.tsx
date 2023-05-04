@@ -25,6 +25,13 @@ const fetchCPU = async (model: string): Promise<CPU> => {
 	let error: { code: number; message: string } | undefined;
 	let result: CPU;
 
+	if (
+		/(core[- ]i\d)(?!.)|(core[- ]i\d[- ])(?!.)/gi.test(model.trim().toLowerCase()) ||
+		model.trim().toLowerCase() === "core"
+	) {
+		notFound();
+	}
+
 	if (manufacturer === "amd") {
 		model = model.replace("™", "");
 		result = await scrapeAMD(model, false).catch((err) => (error = err));
@@ -47,6 +54,7 @@ export async function generateMetadata({ searchParams }: { searchParams: { cpu: 
 	return {
 		title: `${cpu.name} | PrimeCPU`,
 		description: `Here you'll find all the information you need about the ${cpu.name} processor.`,
+		metadataBase: new URL("https://comparator.pkozak.org"),
 		openGraph: {
 			title: `${cpu.name} | PrimeCPU`,
 			description: `Here you'll find all the information you need about the ${cpu.name} processor.`,

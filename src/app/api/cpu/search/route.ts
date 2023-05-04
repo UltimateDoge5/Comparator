@@ -1,15 +1,20 @@
-import type { NextApiRequest, NextApiResponse } from "next";
-import { AMD_PRODUCTS, INTEL_PRODUCTS } from "../../../util/products";
+import { AMD_PRODUCTS, INTEL_PRODUCTS } from "../../../../util/products";
+import { NextResponse } from "next/server";
+
 export const runtime = "edge";
 
-const handler = async (req: NextApiRequest, res: NextApiResponse) => {
+export async function GET(req: Request) {
+	const { searchParams } = new URL(req.url);
+
 	// q - query
 	// p - page
-	let { q, p } = req.query as { q: string; p: string };
+	// Can assert types - null checks are still there
+	let q = searchParams.get("q") as string;
+	let p = searchParams.get("p") as string;
 
-	if (p === undefined) p = "1";
+	if (p === null) p = "1";
 	const pInt = (parseInt(p) < 1 ? 1 : parseInt(p) - 1); //The app starts at p = 1, but we start at 0
-	if (q === undefined) q = "";
+	if (q === null) q = "";
 
 	// Get 5 cpus matching the query
 	const names = INTEL_PRODUCTS
@@ -18,7 +23,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
 	const remainingItems = Math.max(names.length - Math.max(pInt, 1) * 5, 0);
 
-	res.status(200).json({
+	return NextResponse.json({
 		names: names.slice(pInt * 5, pInt * 5 + 5).map((name) => ({
 			model: beautifyNames(name),
 			manufacturer: name.toLowerCase().includes("amd") ? "amd" : "intel",
@@ -46,5 +51,3 @@ const beautifyNames = (name: string) => {
 	}
 	return result.trim();
 };
-
-export default handler;

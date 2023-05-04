@@ -4,7 +4,7 @@ import useSWRInfinite from "swr/infinite";
 import useSWR from "swr";
 import Head from "next/head";
 import Link from "next/link";
-import { Fragment, useEffect, useState } from "react";
+import { Fragment } from "react";
 import { ToastContainer } from "react-toastify";
 import type { CPU, Manufacturer } from "../../../CPU";
 import Navbar from "../../components/navbar";
@@ -13,13 +13,11 @@ import { capitalize } from "../../util/formatting";
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
-const Page = () => {
-	const [query, setQuery] = useState(getQuery());
-
+const Page = ({ searchParams }: { searchParams: { q: string } }) => {
 	const { data, size, setSize, isLoading } = useSWRInfinite<{
 		names: { model: string; manufacturer: Manufacturer }[];
 		remainingItems: number;
-	}>((index) => `/api/cpu/search?q=${query}&p=${index + 1}`, fetcher);
+	}>((index) => `/api/cpu/search?q=${searchParams}&p=${index + 1}`, fetcher);
 
 	const remainingItems = data?.[data.length - 1]?.remainingItems || 0;
 
@@ -33,18 +31,18 @@ const Page = () => {
 			<Navbar />
 			<div className="mb-8 mt-6 flex w-full flex-col items-center gap-6 text-white">
 				<h1 className="text-4xl">Search for CPUs</h1>
-				<input
-					type="search"
-					value={query}
-					onChange={(e) => {
-						const params = new URLSearchParams(window.location.search);
-						params.set("q", e.target.value);
-						window.history.replaceState({}, "", `${window.location.pathname}?${params.toString()}`);
-						setQuery(e.target.value);
-					}}
-					className="h-14 w-[90%] rounded-md border border-gray-400 bg-slate-700 p-2 text-xl text-white shadow-lg md:w-1/2"
-					placeholder="Search for a CPU"
-				/>
+				{/*<input*/}
+				{/*	type="search"*/}
+				{/*	value={query}*/}
+				{/*	onChange={(e) => {*/}
+				{/*		const params = new URLSearchParams(window.location.search);*/}
+				{/*		params.set("q", e.target.value);*/}
+				{/*		window.history.replaceState({}, "", `${window.location.pathname}?${params.toString()}`);*/}
+				{/*		setQuery(e.target.value);*/}
+				{/*	}}*/}
+				{/*	className="h-14 w-[90%] rounded-md border border-gray-400 bg-slate-700 p-2 text-xl text-white shadow-lg md:w-1/2"*/}
+				{/*	placeholder="Search for a CPU"*/}
+				{/*/>*/}
 				<div className="flex w-full flex-col items-center gap-6">
 					{data?.map(({ names }, i) => {
 						return (
@@ -76,24 +74,7 @@ const Page = () => {
 };
 
 const CPUItem = ({ model, manufacturer }: { model: string; manufacturer: Manufacturer }) => {
-	const { data, error, isLoading, mutate } = useSWR<CPU>(`/api/cpu/${manufacturer}?model=${model}`, fetcher, {});
-	const [loadingPrice, setLoadingPrice] = useState(false);
-
-	useEffect(() => {
-		(async () => {
-			if (data?.manufacturer === "amd" && data.marketSegment === "desktop" && data?.MSRP === null) {
-				setLoadingPrice(true);
-				const res = await fetch(`/api/cpu/getPrice?model=${model}`);
-
-				if (res.ok) {
-					const price = await res.json();
-					await mutate({ ...data, MSRP: price });
-				}
-
-				setLoadingPrice(false);
-			}
-		})();
-	}, [data]);
+	const { data, error, isLoading } = useSWR<CPU>(`/api/cpu/${manufacturer}?model=${model}`, fetcher, {});
 
 	return (
 		<div
@@ -113,7 +94,7 @@ const CPUItem = ({ model, manufacturer }: { model: string; manufacturer: Manufac
 			</span>
 			<span
 				className={
-					isLoading || loadingPrice || error ? "flex h-6 animate-pulse items-center rounded-md bg-gray-800 text-transparent" : ""
+					isLoading || error ? "flex h-6 animate-pulse items-center rounded-md bg-gray-800 text-transparent" : ""
 				}
 			>
 				{data?.MSRP ? `${data.MSRP}$` : "Unavailable"}
