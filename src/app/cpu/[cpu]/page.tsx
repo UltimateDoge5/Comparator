@@ -84,8 +84,7 @@ const Page = async ({ searchParams }: { searchParams: { cpu: string } }) => {
 	const cpu = await fetchCPU(searchParams.cpu);
 	return (
 		<>
-			<Navbar />
-			<div className="text-white">
+			<main className="text-white">
 				<div className="my-4 flex justify-center gap-4">
 					<h1 className="text-3xl">{cpu.name}</h1>
 				</div>
@@ -93,8 +92,7 @@ const Page = async ({ searchParams }: { searchParams: { cpu: string } }) => {
 					<RenderTable cpu={cpu} list={TableStructure} />
 				</div>
 				{/*<ToastContainer autoClose={2500} position="bottom-left" theme="dark" draggable={false} />*/}
-			</div>
-			<Footer />
+			</main>
 		</>
 	);
 };

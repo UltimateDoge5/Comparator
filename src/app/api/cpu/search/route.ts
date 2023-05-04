@@ -30,7 +30,7 @@ export async function GET(req: Request) {
 		})),
 		remainingItems,
 	});
-};
+}
 
 // Make the names look nice
 const beautifyNames = (name: string) => {

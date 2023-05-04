@@ -25,4 +25,4 @@ export async function GET(req: Request) {
 
 	if (error) return new Response(error.message, { status: error.code });
 	return NextResponse.json(result);
-};
+}
