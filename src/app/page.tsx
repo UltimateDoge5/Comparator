@@ -1,3 +1,5 @@
+"use client"
+
 import Head from "next/head";
 import { useState } from "react";
 import type { CPU } from "../../CPU";
@@ -9,19 +11,19 @@ import Footer from "../components/footer";
 import Navbar from "../components/navbar";
 import { Transition } from "@headlessui/react";
 
-export default function Index() {
+// export const metadata = {
+// 	title: "Compare any CPU you want",
+// 	description: "Comparator lets you compare CPUs and GPUs in an instant!",
+// 	keywords: "cpu, gpu, compare, comparator, intel, amd, tool, app",
+//
+// };
+
+export default function Page() {
 	const [cpus, setCpus] = useState<[CPU | null, CPU | null]>([null, null]);
 	const cpusFulfilled = cpus.every((cpu) => cpu !== null);
 
 	return (
 		<>
-			<Head>
-				<title>Compare any CPU you want</title>
-				<meta name="description" content="Comparator lets you compare CPUs and GPUs in an instant!" />
-				<link rel="canonical" href="https://comparator.pkozak.org" />
-				<meta name="keywords" content="cpu, gpu, compare, comparator, intel, amd, tool, app" />
-			</Head>
-
 			<Navbar />
 			<main className="flex flex-col items-center gap-4 pt-4 transition-all md:pt-12 ">
 				<h1 className="text-center text-4xl font-semibold text-white md:text-6xl">Compare CPUs</h1>
@@ -60,12 +62,12 @@ export default function Index() {
 					{cpusFulfilled ? (
 						<Comparison cpus={cpus as [CPU, CPU]} />
 					) : (
-						<h3 className="flex items-center gap-2 text-center text-2xl text-white ">Select two CPUs to compare them</h3>
-					)}
+						 <h3 className="flex items-center gap-2 text-center text-2xl text-white ">Select two CPUs to compare them</h3>
+					 )}
 				</section>
+				{/*<ToastContainer autoClose={2500} position="bottom-left" theme="dark" draggable={false} />*/}
 			</main>
 			<Footer />
-			<ToastContainer autoClose={2500} position="bottom-left" theme="dark" draggable={false} />
 		</>
 	);
 }

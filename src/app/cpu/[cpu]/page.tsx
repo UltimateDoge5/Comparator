@@ -1,21 +1,15 @@
-import type { CPU } from "../../../CPU";
-import type { GetServerSideProps, InferGetServerSidePropsType } from "next";
-import Footer from "../../components/footer";
-import Head from "next/head";
-import { capitalize, formatNumber } from "../../util/formatting";
-import Navbar from "../../components/navbar";
-import { domAnimation, LazyMotion, m, useTime, useTransform } from "framer-motion";
-import { ReloadIcon } from "../../components/icons";
-import { Fragment, useEffect, useState } from "react";
-import { toast, ToastContainer } from "react-toastify";
-import scrapeAMD from "../../util/scrapers/amd";
-import scrapeIntel from "../../util/scrapers/intel";
-import Tooltip from "../../components/tooltip";
+import { Fragment } from "react";
+import Navbar from "../../../components/navbar";
+import Footer from "../../../components/footer";
+import type { CPU } from "../../../../CPU";
+import Tooltip from "../../../components/tooltip";
+import { capitalize, formatNumber } from "../../../util/formatting";
+import scrapeAMD from "../../../util/scrapers/amd";
+import scrapeIntel from "../../../util/scrapers/intel";
+import { notFound } from "next/navigation";
+import { Metadata } from "next";
 
-// Rolling back again to the node runtime, as edge still behaves weirdly on prod
-// export const config = {
-// 	runtime: "experimental-edge",
-// };
+export const runtime = "edge";
 
 const DateFormat = new Intl.DateTimeFormat("en-US", {
 	year: "numeric",
@@ -23,70 +17,74 @@ const DateFormat = new Intl.DateTimeFormat("en-US", {
 	day: "numeric",
 });
 
-const Cpu = ({ data }: InferGetServerSidePropsType<typeof getServerSideProps>) => {
-	const title = `${data.name} | PrimeCPU`;
+const fetchCPU = async (model: string): Promise<CPU> => {
+	model = model.toLowerCase();
+	const manufacturer = model.includes("intel") ? "intel" : model.includes("amd") ? "amd" : undefined;
+	if (process.env.NODE_ENV === "development") console.log(model, manufacturer);
 
-	const time = useTime();
-	const rotate = useTransform(time, [0, 2000], [0, 360], { clamp: false });
-	const [refetch, setRefetch] = useState(false);
+	let error: { code: number; message: string } | undefined;
+	let result: CPU;
 
-	useEffect(() => {
-		const searchParams = new URLSearchParams(window.location.search);
-		if (searchParams.get("r") === "true") {
-			toast.success("CPU data refreshed");
-			searchParams.delete("r");
-			window.history.replaceState({}, "", window.location.pathname);
-		}
-	}, []);
+	if (manufacturer === "amd") {
+		model = model.replace("™", "");
+		result = await scrapeAMD(model, false).catch((err) => (error = err));
+	} else {
+		result = await scrapeIntel(model, false).catch((err) => (error = err));
+	}
 
-	const refreshCPU = async () => {
-		setRefetch(true);
-		const result = await fetch(`/api/cpu/${data.manufacturer}?model=${data.ref.split("/").pop()}&no-cache`);
-		setRefetch(false);
+	if (error?.code === 404) {
+		notFound();
+	} else if (error?.code) {
+		throw new Error(`Error ${error.code}: ${error.message}`, { cause: error });
+	}
 
-		if (!result.ok) {
-			toast.error(result.status === 504 ? "The server is taking too long to respond. Try again later." : await result.text());
-			return;
-		}
+	return result;
+};
 
-		setTimeout(() => window.location.replace(window.location.href + "?r=true"), 100);
+export async function generateMetadata({ searchParams }: { searchParams: { cpu: string } }): Promise<Metadata> {
+	const cpu = await fetchCPU(searchParams.cpu);
+
+	return {
+		title: `${cpu.name} | PrimeCPU`,
+		description: `Here you'll find all the information you need about the ${cpu.name} processor.`,
+		openGraph: {
+			title: `${cpu.name} | PrimeCPU`,
+			description: `Here you'll find all the information you need about the ${cpu.name} processor.`,
+			type: "website",
+			url: `https://comparator.pkozak.org/cpu/${searchParams.cpu}`,
+			// images: [
+			// 	{
+			// 		url: `https://comparator.pkozak.org/api/cpu/${searchParams.cpu}/image`,
+			// 		width: 1200,
+			// 		height: 630,
+			// 		alt: `${cpu.name} processor`,
+			// 	},
+			// ],
+		},
+		twitter: {
+			title: `${cpu.name} | PrimeCPU`,
+			description: `Here you'll find all the information you need about the ${cpu.name} processor.`,
+			card: "summary",
+			creator: "@UltimateDoge",
+		},
+		themeColor: "black",
+		creator: "Piotr Kozak",
 	};
+}
 
+const Page = async ({ searchParams }: { searchParams: { cpu: string } }) => {
+	const cpu = await fetchCPU(searchParams.cpu);
 	return (
 		<>
-			<Head>
-				<title>{title}</title>
-				<meta name="description" content={`Here you'll find all the information you need about the ${data.name} processor.`} />
-				<meta property="og:title" content={title} />
-				<meta
-					property="og:description"
-					content={`Here you'll find all the information you need about the ${data.name} processor.`}
-				/>
-				<meta property="og:type" content="website" />
-				<meta property="og:url" content={`https://comparator.pkozak.org/cpu/${data.name}`} />
-			</Head>
 			<Navbar />
 			<div className="text-white">
 				<div className="my-4 flex justify-center gap-4">
-					<h1 className="text-3xl">{data.name}</h1>
-					<button
-						onClick={refreshCPU}
-						title="Reload data"
-						disabled={data.name === null || refetch}
-						className="rounded-md border border-gray-400/20 bg-gray-400/20 p-2 transition-all enabled:cursor-pointer
-						 enabled:hover:bg-gray-200/50 disabled:cursor-not-allowed disabled:opacity-50"
-					>
-						<LazyMotion features={domAnimation}>
-							<m.div style={{ rotate: refetch ? rotate : 0 }}>
-								<ReloadIcon className="h-5 w-5 text-white/60" />
-							</m.div>
-						</LazyMotion>
-					</button>
+					<h1 className="text-3xl">{cpu.name}</h1>
 				</div>
 				<div className="mx-auto w-full border-0 border-gray-200/50 bg-white/20 p-4 text-lg md:mb-12 md:w-3/5 md:rounded-md md:border md:p-6">
-					<RenderTable cpu={data} list={TableStructure} />
+					<RenderTable cpu={cpu} list={TableStructure} />
 				</div>
-				<ToastContainer autoClose={2500} position="bottom-left" theme="dark" draggable={false} />
+				{/*<ToastContainer autoClose={2500} position="bottom-left" theme="dark" draggable={false} />*/}
 			</div>
 			<Footer />
 		</>
@@ -224,7 +222,7 @@ const TableStructure: Table = {
 			path: "MSRP",
 			type: "number",
 			unit: "$",
-			tooltip: "Manufacturer's suggested retail price.",
+			tooltip: "Manufacturer's suggested retail price. For AMDs may not be as accurate.",
 		},
 	},
 	"CPU specifications": {
@@ -318,42 +316,8 @@ type Row = { title: string; hideOnUndefined?: true; tooltip?: string } & ( // Pr
 	| { type: "component"; component: ({ cpu }: { cpu: CPU }) => JSX.Element }
 	| { type: "string"; capitalize?: true; path: string }
 	| { type: "date"; path: string }
-);
+	);
 
 const traversePath = (path: string, obj: any) => path.split(".").reduce((prev, curr) => prev && prev[curr], obj);
 
-export const getServerSideProps: GetServerSideProps<{ data: CPU }> = async ({ params }) => {
-	if (!params?.cpu) {
-		return {
-			notFound: true,
-		};
-	}
-
-	let model = (params?.cpu as string).toLowerCase();
-	const manufacturer = model.includes("intel") ? "intel" : model.includes("amd") ? "amd" : undefined;
-	if (process.env.NODE_ENV === "development") console.log(model, manufacturer);
-
-	if (!manufacturer) {
-		return {
-			notFound: true,
-		};
-	}
-
-	let error: { code: number; message: string } | undefined;
-	let result: CPU;
-
-	if (manufacturer === "amd") {
-		model = model.replace("™", "");
-		result = await scrapeAMD(model, false).catch((err) => (error = err));
-	} else {
-		result = await scrapeIntel(model, false).catch((err) => (error = err));
-	}
-
-	if (error) return { notFound: true };
-
-	return {
-		props: { data: result },
-	};
-};
-
-export default Cpu;
+export default Page;

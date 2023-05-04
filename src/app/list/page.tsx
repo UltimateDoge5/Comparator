@@ -1,17 +1,19 @@
+"use client";
+
 import useSWRInfinite from "swr/infinite";
 import useSWR from "swr";
-import Footer from "../components/footer";
 import Head from "next/head";
-import type { CPU, Manufacturer } from "../../CPU";
 import Link from "next/link";
 import { Fragment, useEffect, useState } from "react";
 import { ToastContainer } from "react-toastify";
-import { capitalize } from "../util/formatting";
-import Navbar from "../components/navbar";
+import type { CPU, Manufacturer } from "../../../CPU";
+import Navbar from "../../components/navbar";
+import Footer from "../../components/footer";
+import { capitalize } from "../../util/formatting";
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
-const List = () => {
+const Page = () => {
 	const [query, setQuery] = useState(getQuery());
 
 	const { data, size, setSize, isLoading } = useSWRInfinite<{
@@ -135,4 +137,4 @@ const getQuery = () => {
 	return params.get("q") || "";
 };
 
-export default List;
+export default Page;

@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { AMD_PRODUCTS, INTEL_PRODUCTS } from "../../../util/products";
+export const runtime = "edge";
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 	// q - query

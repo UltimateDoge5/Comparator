@@ -1,11 +1,7 @@
 import { AMD_PRODUCTS, INTEL_PRODUCTS } from "../../../util/products";
-import { normaliseIntel } from "../../../util/formatting";
 import type { NextRequest } from "next/server";
 
-export const config = {
-	runtime: "edge"
-};
-
+export const runtime = "edge"
 const handler = async (req: NextRequest) => {
 	const { searchParams } = new URL(req.url)
 	const manufacturer = searchParams.get("manufacturer");

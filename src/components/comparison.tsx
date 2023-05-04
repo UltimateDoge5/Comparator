@@ -1,3 +1,4 @@
+"use client"
 import type { CPU, Graphics } from "../../CPU";
 import { Fragment, useEffect } from "react";
 import { domAnimation, LazyMotion, m } from "framer-motion";

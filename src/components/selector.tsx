@@ -1,3 +1,4 @@
+"use client"
 import type { CPU, Manufacturer } from "../../CPU";
 import { Fragment, useEffect, useReducer, useRef, useState } from "react";
 import { Transition } from "@headlessui/react";
