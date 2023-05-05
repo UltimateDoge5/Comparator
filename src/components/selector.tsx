@@ -1,3 +1,4 @@
+"use client";
 import type { CPU, Manufacturer } from "../../CPU";
 import { Fragment, useEffect, useReducer, useRef, useState } from "react";
 import { Transition } from "@headlessui/react";
@@ -6,17 +7,13 @@ import { ReloadIcon } from "./icons";
 import { domAnimation, LazyMotion, m, useTime, useTransform } from "framer-motion";
 import { toast } from "react-toastify";
 
-const Selector = ({ setCPU, urlId }: SelectorProps) => {
+const Selector = ({ setCPU, urlId, initialSelection }: SelectorProps) => {
 	const [selection, setSelection] = useReducer(
 		(prev: Selection, next: Partial<Selection>) => ({ ...prev, ...next }),
-		{
-			manufacturer: "intel",
-			model: "",
-			state: "idle",
-		},
+		initialSelection,
 	);
 
-	const [tempModel, setTempModel] = useState("");
+	const [tempModel, setTempModel] = useState(initialSelection.model);
 	const [countdownBarPercent, setCountdownBarPercent] = useState(100);
 	const [refetch, setRefetch] = useState(false);
 
@@ -52,18 +49,6 @@ const Selector = ({ setCPU, urlId }: SelectorProps) => {
 		return () => window.clearInterval(intervalRef.current);
 	}, [barVisible, selection.state, tempModel]);
 
-	// Load the model from the URL
-	useEffect(() => {
-		const url = new URL(window.location.href);
-		const param = url.searchParams.get(urlId);
-
-		if (param) {
-			const [manufacturer, model] = splitFirst(param, "-").map((s) => decodeURI(s));
-			setTempModel(decodeURI(model));
-			setSelection({ manufacturer: manufacturer as Manufacturer, model, state: "loading" });
-		}
-	}, []);
-
 	// Fetch the CPU
 	useEffect(() => {
 		if (selection.model.length > 3) {
@@ -79,7 +64,7 @@ const Selector = ({ setCPU, urlId }: SelectorProps) => {
 				const url = new URL(window.location.href);
 				url.searchParams.set(
 					urlId,
-					`${encodeURI(selection.manufacturer)}-${encodeURI(selection.model.toLowerCase())}`,
+					`${selection.manufacturer}-${selection.model.toLowerCase()}`,
 				);
 				window.history.pushState({}, "", url.toString());
 
@@ -142,7 +127,7 @@ const Selector = ({ setCPU, urlId }: SelectorProps) => {
 	};
 
 	return (
-		<div className={`relative flex items-center gap-3 rounded-md border p-4 transition-colors ${getMarkings(selection.state)}`}>
+		<div className={`relative flex items-center gap-3 rounded-md border p-4 transition-colors ${getMarkings(selection.state)}`} >
 			<select
 				value={selection.manufacturer}
 				disabled={selection.state === "loading" || refetch}
@@ -186,7 +171,7 @@ const Selector = ({ setCPU, urlId }: SelectorProps) => {
 				>
 					<div className={`absolute left-5 top-full z-20 flex w-max flex-col rounded-lg bg-white p-2 shadow-md transition-all md:left-0 md:flex-row ${previewPositions[omittedSearch.length - 1]}`}>
 						{omittedSearch.map((result) => (
-							<div
+							<button
 								key={result}
 								className="cursor-pointer rounded-md p-2 hover:bg-gray-300 focus:bg-gray-200"
 								onClick={() => {
@@ -195,7 +180,7 @@ const Selector = ({ setCPU, urlId }: SelectorProps) => {
 								}}
 							>
 								{result}
-							</div>
+							</button>
 						))}
 					</div>
 				</Transition>
@@ -203,7 +188,6 @@ const Selector = ({ setCPU, urlId }: SelectorProps) => {
 			<RefetchButton />
 			<Transition
 				as={Fragment}
-				appear={true}
 				show={barVisible}
 				enter="transition-opacity duration-300"
 				enterFrom="opacity-0"
@@ -239,15 +223,10 @@ const getMarkings = (state: Selection["state"]) => {
 	}
 };
 
-// Split the string on the first appearance of the separator
-export const splitFirst = (str: string, separator: string) => {
-	const index = str.indexOf(separator);
-	return [str.substring(0, index), str.substring(index + 1)];
-};
-
 interface SelectorProps {
 	setCPU: (cpu: CPU | null) => void;
 	urlId: string;
+	initialSelection: Selection;
 }
 
 export interface Selection {

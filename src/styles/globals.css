@@ -12,8 +12,3 @@ html::-webkit-scrollbar-thumb {
     background: rgba(204, 204, 204, 0.38);
     border-radius: 10px;
 }
-
-#__next {
-    display: grid;
-    @apply grid-rows-[64px,1fr,112px] md:grid-rows-[64px,1fr,10vh]
-}

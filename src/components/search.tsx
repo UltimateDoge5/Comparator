@@ -1,18 +1,15 @@
+"use client";
+import { Fragment, useState } from "react";
 import useSWRInfinite from "swr/infinite";
-import useSWR from "swr";
-import Footer from "../components/footer";
-import Head from "next/head";
 import type { CPU, Manufacturer } from "../../CPU";
+import useSWR from "swr";
 import Link from "next/link";
-import { Fragment, useEffect, useState } from "react";
-import { ToastContainer } from "react-toastify";
 import { capitalize } from "../util/formatting";
-import Navbar from "../components/navbar";
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
-const List = () => {
-	const [query, setQuery] = useState(getQuery());
+const Search = ({ initialQuery }: { initialQuery: string }) => {
+	const [query, setQuery] = useState(initialQuery);
 
 	const { data, size, setSize, isLoading } = useSWRInfinite<{
 		names: { model: string; manufacturer: Manufacturer }[];
@@ -22,14 +19,7 @@ const List = () => {
 	const remainingItems = data?.[data.length - 1]?.remainingItems || 0;
 
 	return (
-		<>
-			<Head>
-				<title>Search for CPUs | PrimeCPU</title>
-				<meta name="description" content="Search for Intel and AMD processors from a wide list." />
-				<meta name="keywords" content="cpu, intel, amd, search, list" />
-			</Head>
-			<Navbar />
-			<div className="mb-8 mt-6 flex w-full flex-col items-center gap-6 text-white">
+		<div className="mb-8 mt-6 flex w-full flex-col items-center gap-6 text-white">
 				<h1 className="text-4xl">Search for CPUs</h1>
 				<input
 					type="search"
@@ -66,32 +56,13 @@ const List = () => {
 				>
 					Load more
 				</button>
-				<ToastContainer autoClose={2500} position="bottom-left" theme="dark" draggable={false} />
 			</div>
-			<Footer />
-		</>
+
 	);
 };
 
 const CPUItem = ({ model, manufacturer }: { model: string; manufacturer: Manufacturer }) => {
-	const { data, error, isLoading, mutate } = useSWR<CPU>(`/api/cpu/${manufacturer}?model=${model}`, fetcher, {});
-	const [loadingPrice, setLoadingPrice] = useState(false);
-
-	useEffect(() => {
-		(async () => {
-			if (data?.manufacturer === "amd" && data.marketSegment === "desktop" && data?.MSRP === null) {
-				setLoadingPrice(true);
-				const res = await fetch(`/api/cpu/getPrice?model=${model}`);
-
-				if (res.ok) {
-					const price = await res.json();
-					await mutate({ ...data, MSRP: price });
-				}
-
-				setLoadingPrice(false);
-			}
-		})();
-	}, [data]);
+	const { data, error, isLoading } = useSWR<CPU>(`/api/cpu/${manufacturer}?model=${model}`, fetcher, {});
 
 	return (
 		<div
@@ -107,13 +78,9 @@ const CPUItem = ({ model, manufacturer }: { model: string; manufacturer: Manufac
 				{capitalize(data?.marketSegment || "Unknown market")}
 			</span>
 			<span className={isLoading || error ? "flex h-6 w-24 animate-pulse items-center rounded-md bg-gray-800 text-transparent" : ""}>
-				{data?.launchDate || ""}
+				{data?.launchDate || "Date unknown"}
 			</span>
-			<span
-				className={
-					isLoading || loadingPrice || error ? "flex h-6 animate-pulse items-center rounded-md bg-gray-800 text-transparent" : ""
-				}
-			>
+			<span className={isLoading || error ? "flex h-6 animate-pulse items-center rounded-md bg-gray-800 text-transparent" : ""}>
 				{data?.MSRP ? `${data.MSRP}$` : "Unavailable"}
 			</span>
 		</div>
@@ -128,11 +95,4 @@ const getManufacturerColor = (manufacturer: Manufacturer) => {
 			return "shadow-blue-500 hover:bg-blue-600/20";
 	}
 };
-
-const getQuery = () => {
-	if (typeof window === "undefined") return "";
-	const params = new URLSearchParams(window.location.search);
-	return params.get("q") || "";
-};
-
-export default List;
+export default Search;
