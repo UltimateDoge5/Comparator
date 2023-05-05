@@ -1,7 +1,14 @@
 import "../styles/globals.css";
+import "react-toastify/dist/ReactToastify.css";
 import { Analytics } from "@vercel/analytics/react";
 import Navbar from "../components/navbar";
 import Footer from "../components/footer";
+
+export const metadata = {
+	icons: {
+		icon: "/favicon.ico",
+	},
+};
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
 	return (

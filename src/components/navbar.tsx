@@ -9,10 +9,10 @@ const Navbar = () => (
 				</h1>
 			</div>
 			<div className="flex items-center gap-2">
-				<Link href="/" className="rounded-md px-1 py-2 text-lg font-semibold hover:bg-gray-800/60 md:px-4">
+				<Link href="/" className="rounded-md px-1 py-2 text-lg font-semibold transition-all hover:bg-gray-300/20 md:px-4">
 					Comparison
 				</Link>
-				<Link href="/list" className="rounded-md px-1 py-2 text-lg font-semibold hover:bg-gray-800/60 md:px-4">
+				<Link href="/list" className="rounded-md px-1 py-2 text-lg font-semibold transition-all hover:bg-gray-300/20 md:px-4">
 					List
 				</Link>
 			</div>

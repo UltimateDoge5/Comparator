@@ -2,7 +2,6 @@
 import { Fragment, useState } from "react";
 import useSWRInfinite from "swr/infinite";
 import type { CPU, Manufacturer } from "../../CPU";
-import { ToastContainer } from "react-toastify";
 import useSWR from "swr";
 import Link from "next/link";
 import { capitalize } from "../util/formatting";
@@ -57,7 +56,6 @@ const Search = ({ initialQuery }: { initialQuery: string }) => {
 				>
 					Load more
 				</button>
-				<ToastContainer autoClose={2500} position="bottom-left" theme="dark" draggable={false} />
 			</div>
 
 	);
