@@ -1,9 +1,8 @@
-"use client"
+"use client";
 import { Fragment, useState } from "react";
 import useSWRInfinite from "swr/infinite";
-import { CPU, Manufacturer } from "../../CPU";
+import type { CPU, Manufacturer } from "../../CPU";
 import { ToastContainer } from "react-toastify";
-;
 import useSWR from "swr";
 import Link from "next/link";
 import { capitalize } from "../util/formatting";
@@ -11,7 +10,6 @@ import { capitalize } from "../util/formatting";
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 const Search = ({ initialQuery }: { initialQuery: string }) => {
-
 	const [query, setQuery] = useState(initialQuery);
 
 	const { data, size, setSize, isLoading } = useSWRInfinite<{
@@ -66,7 +64,7 @@ const Search = ({ initialQuery }: { initialQuery: string }) => {
 };
 
 const CPUItem = ({ model, manufacturer }: { model: string; manufacturer: Manufacturer }) => {
-	const { data, error, isLoading, mutate } = useSWR<CPU>(`/api/cpu/${manufacturer}?model=${model}`, fetcher, {});
+	const { data, error, isLoading } = useSWR<CPU>(`/api/cpu/${manufacturer}?model=${model}`, fetcher, {});
 
 	return (
 		<div
@@ -82,13 +80,9 @@ const CPUItem = ({ model, manufacturer }: { model: string; manufacturer: Manufac
 				{capitalize(data?.marketSegment || "Unknown market")}
 			</span>
 			<span className={isLoading || error ? "flex h-6 w-24 animate-pulse items-center rounded-md bg-gray-800 text-transparent" : ""}>
-				{data?.launchDate || ""}
+				{data?.launchDate || "Date unknown"}
 			</span>
-			<span
-				className={
-					isLoading || error ? "flex h-6 animate-pulse items-center rounded-md bg-gray-800 text-transparent" : ""
-				}
-			>
+			<span className={isLoading || error ? "flex h-6 animate-pulse items-center rounded-md bg-gray-800 text-transparent" : ""}>
 				{data?.MSRP ? `${data.MSRP}$` : "Unavailable"}
 			</span>
 		</div>

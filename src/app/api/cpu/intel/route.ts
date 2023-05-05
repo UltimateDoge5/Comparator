@@ -2,10 +2,12 @@ import { normaliseIntel } from "../../../../util/formatting";
 import scrapeIntel from "../../../../util/scrapers/intel";
 import { NextResponse } from "next/server";
 
+export const runtime = "edge";
+
 export async function GET(req: Request) {
 	const { searchParams } = new URL(req.url);
 	const model = searchParams.get("model");
-	const noCache = searchParams.get("no-cache") !== undefined;
+	const noCache = searchParams.get("no-cache") !== null;
 
 	if (!model || model.length < 3) return new Response("Invalid model", { status: 400 });
 

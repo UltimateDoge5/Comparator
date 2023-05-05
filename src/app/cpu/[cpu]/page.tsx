@@ -1,13 +1,11 @@
 import { Fragment } from "react";
-import Navbar from "../../../components/navbar";
-import Footer from "../../../components/footer";
 import type { CPU } from "../../../../CPU";
 import Tooltip from "../../../components/tooltip";
 import { capitalize, formatNumber } from "../../../util/formatting";
 import scrapeAMD from "../../../util/scrapers/amd";
 import scrapeIntel from "../../../util/scrapers/intel";
 import { notFound } from "next/navigation";
-import { Metadata } from "next";
+import type { Metadata } from "next";
 
 export const runtime = "edge";
 
@@ -62,7 +60,7 @@ export async function generateMetadata({ searchParams }: { searchParams: { cpu: 
 			url: `https://comparator.pkozak.org/cpu/${searchParams.cpu}`,
 			// images: [
 			// 	{
-			// 		url: `https://comparator.pkozak.org/api/cpu/${searchParams.cpu}/image`,
+			// 		url: `/image`,
 			// 		width: 1200,
 			// 		height: 630,
 			// 		alt: `${cpu.name} processor`,
