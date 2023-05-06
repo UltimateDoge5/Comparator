@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 	openGraph: {
 		title: "Search for a CPU",
 		description: "Search for any cpu you want in matter of seconds!",
-		url: "https://comparator.pkozak.org",
+		url: "https://prime.pkozak.org",
 		type: "website",
 		locale: "en_US",
 	},

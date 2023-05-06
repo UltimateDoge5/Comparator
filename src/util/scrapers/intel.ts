@@ -3,19 +3,17 @@ import { load } from "cheerio";
 import type { CPU, Memory } from "../../../CPU";
 import { normaliseMarket } from "../formatting";
 import elementSelector from "../selectors";
-import { Redis } from "@upstash/redis";
-
-const redis = Redis.fromEnv();
+import type { Redis } from "@upstash/redis";
 
 let $: CheerioAPI;
 
-const scrapeIntel = async (model: string, noCache: boolean) =>
+const scrapeIntel = async (redis: Redis, model: string, noCache: boolean) =>
 	new Promise<CPU>(async (resolve, reject) => {
 		let cpu: CPU | null = !noCache ? (await redis.json.get(`intel-${model.replace(/ /g, "-")}`, "$"))?.[0] : null;
 
 		if (cpu !== null && cpu?.schemaVer >= parseFloat(process.env.MIN_SCHEMA_VERSION || "1.2")) return resolve(cpu);
 
-		const token = (await redis.get<string>("intel-token")) ?? (await refreshToken());
+		const token = (await redis.get<string>("intel-token")) ?? (await refreshToken(redis));
 
 		// Get the url
 		let query = await fetch("https://platform.cloud.coveo.com/rest/search/v2?f:@tabfilter=[Products]", {
@@ -31,7 +29,7 @@ const scrapeIntel = async (model: string, noCache: boolean) =>
 		});
 
 		if (query.status === 401 || query.status === 419) {
-			const token = await refreshToken();
+			const token = await refreshToken(redis);
 			query = await fetch("https://platform.cloud.coveo.com/rest/search/v2?f:@tabfilter=[Products]", {
 				method: "POST",
 				headers: {
@@ -107,14 +105,14 @@ const scrapeIntel = async (model: string, noCache: boolean) =>
 				maxSize: getFloatParameter("Max Memory Size"),
 			},
 			graphics: cpuName?.includes("F")
-				? false
-				: {
-						baseFrequency: getFloatParameter("Graphics Base Frequency"),
-						maxFrequency: getFloatParameter("Graphics Max Dynamic Frequency"),
-						displays:
-							getFloatParameter("Max # of Displays Supported") ??
-							getFloatParameter("# of Displays Supported"),
-				  },
+			          ? false
+			          : {
+					baseFrequency: getFloatParameter("Graphics Base Frequency"),
+					maxFrequency: getFloatParameter("Graphics Max Dynamic Frequency"),
+					displays:
+						getFloatParameter("Max # of Displays Supported") ??
+						getFloatParameter("# of Displays Supported"),
+				},
 			pcie: getParameter("PCI Express Revision"),
 			source: url,
 			ref: "/cpu/intel-" + model,
@@ -191,7 +189,7 @@ const getPrice = (s: string | null): number | null => {
 	return parseFloat(s);
 };
 
-export const refreshToken = async () => {
+export const refreshToken = async (redis: Redis) => {
 	const token = await fetch("https://www.intel.pl/libs/intel/services/replatform?searchHub=entepriseSearch");
 
 	if (!token.ok) {

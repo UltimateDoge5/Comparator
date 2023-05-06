@@ -4,21 +4,27 @@ import type { Selection } from "../components/selector";
 
 export const metadata: Metadata = {
 	title: "Compare any CPU you want",
-	description: "Comparator lets you compare CPUs and GPUs in an instant!",
+	description: "PrimeCPU lets you compare CPUs and GPUs in an instant!",
 	keywords: ["cpu", "compare", "comparator", "intel", "amd", "tool", "app"],
 	openGraph: {
 		title: "Compare any CPU you want",
-		description: "Comparator lets you compare CPUs and GPUs in an instant!",
-		url: "https://comparator.pkozak.org",
+		description: "PrimeCPU lets you compare CPUs and GPUs in an instant!",
+		url: "https://prime.pkozak.org",
 		type: "website",
 		locale: "en_US",
+
+	},
+	twitter: {
+		title: "Compare any CPU you want",
+		description: "PrimeCPU lets you compare CPUs and GPUs in an instant!",
+
 	},
 };
 
 // Generate initial selection to prevent a flash of models appearing in the selector
 const getInitialSelection = (param: string): Selection => {
 	if (param === undefined) return { model: "", manufacturer: "intel", state: "idle" };
-	const [manufacturer, model] = splitFirst(param,"-").map((s) => decodeURI(s));
+	const [manufacturer, model] = splitFirst(param, "-").map((s) => decodeURI(s));
 	return { model, manufacturer: manufacturer as "intel" | "amd", state: "loading" };
 };
 
