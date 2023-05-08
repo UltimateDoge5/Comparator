@@ -8,10 +8,7 @@ import { domAnimation, LazyMotion, m, useTime, useTransform } from "framer-motio
 import { toast } from "react-toastify";
 
 const Selector = ({ setCPU, urlId, initialSelection }: SelectorProps) => {
-	const [selection, setSelection] = useReducer(
-		(prev: Selection, next: Partial<Selection>) => ({ ...prev, ...next }),
-		initialSelection,
-	);
+	const [selection, setSelection] = useReducer((prev: Selection, next: Partial<Selection>) => ({ ...prev, ...next }), initialSelection);
 
 	const [tempModel, setTempModel] = useState(initialSelection.model);
 	const [countdownBarPercent, setCountdownBarPercent] = useState(100);
@@ -62,17 +59,15 @@ const Selector = ({ setCPU, urlId, initialSelection }: SelectorProps) => {
 
 				// Update the URL after successful fetch
 				const url = new URL(window.location.href);
-				url.searchParams.set(
-					urlId,
-					`${selection.manufacturer}-${selection.model.toLowerCase()}`,
-				);
+				url.searchParams.set(urlId, `${selection.manufacturer}-${selection.model.toLowerCase()}`);
 				window.history.pushState({}, "", url.toString());
 
 				setSelection({ state: "success" });
 				setCPU(cpu.data);
 			});
 		}
-	}, [selection.model]);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [selection.manufacturer]);
 
 	// Manage the search tip results
 	useEffect(() => {
@@ -102,9 +97,7 @@ const Selector = ({ setCPU, urlId, initialSelection }: SelectorProps) => {
 						setRefetch(false);
 						if (cpu.error) {
 							toast.error(
-								cpu.error.code === 504
-								? "The server is taking too long to respond. Try again later."
-								: cpu.error.text,
+								cpu.error.code === 504 ? "The server is taking too long to respond. Try again later." : cpu.error.text
 							);
 							return;
 						}
@@ -127,7 +120,7 @@ const Selector = ({ setCPU, urlId, initialSelection }: SelectorProps) => {
 	};
 
 	return (
-		<div className={`relative flex items-center gap-3 rounded-md border p-4 transition-colors ${getMarkings(selection.state)}`} >
+		<div className={`relative flex items-center gap-3 rounded-md border p-4 transition-colors ${getMarkings(selection.state)}`}>
 			<select
 				value={selection.manufacturer}
 				disabled={selection.state === "loading" || refetch}
@@ -169,7 +162,11 @@ const Selector = ({ setCPU, urlId, initialSelection }: SelectorProps) => {
 					leaveFrom="opacity-100"
 					leaveTo="opacity-0"
 				>
-					<div className={`absolute left-5 top-full z-20 flex w-max flex-col rounded-lg bg-white p-2 shadow-md transition-all md:left-0 md:flex-row ${previewPositions[omittedSearch.length - 1]}`}>
+					<div
+						className={`absolute left-5 top-full z-20 flex w-max flex-col rounded-lg bg-white p-2 shadow-md transition-all md:left-0 md:flex-row ${
+							previewPositions[omittedSearch.length - 1]
+						}`}
+					>
 						{omittedSearch.map((result) => (
 							<button
 								key={result}

@@ -20,44 +20,43 @@ const Search = ({ initialQuery }: { initialQuery: string }) => {
 
 	return (
 		<div className="mb-8 mt-6 flex w-full flex-col items-center gap-6 text-white">
-				<h1 className="text-4xl">Search for CPUs</h1>
-				<input
-					type="search"
-					value={query}
-					onChange={(e) => {
-						const params = new URLSearchParams(window.location.search);
-						params.set("q", e.target.value);
-						window.history.replaceState({}, "", `${window.location.pathname}?${params.toString()}`);
-						setQuery(e.target.value);
-					}}
-					className="h-14 w-[90%] rounded-md border border-gray-400 bg-slate-700 p-2 text-xl text-white shadow-lg md:w-1/2"
-					placeholder="Search for a CPU"
-				/>
-				<div className="flex w-full flex-col items-center gap-6">
-					{data?.map(({ names }, i) => {
-						return (
-							<Fragment key={i}>
-								{names.map((cpu) => (
-									<CPUItem key={cpu.model} model={cpu.model} manufacturer={cpu.manufacturer} />
-								))}
-							</Fragment>
-						);
-					})}
-					{isLoading &&
-						Array.from({ length: 5 })
-							.fill(1)
-							.map((_, i) => <div key={i} className="h-16 w-1/2 animate-pulse rounded-md bg-gray-800" />)}
-					{remainingItems === 0 && <span className="text-xl font-medium">No more CPUs to show</span>}
-				</div>
-				<button
-					onClick={() => setSize(size + 1)}
-					disabled={isLoading || remainingItems === 0}
-					className="mb-8 rounded-md border border-slate-200/20 bg-slate-50/5 px-6 py-2 text-slate-100 transition-colors hover:bg-slate-100/10 disabled:pointer-events-none disabled:opacity-50"
-				>
-					Load more
-				</button>
+			<h1 className="text-4xl">Search for CPUs</h1>
+			<input
+				type="search"
+				value={query}
+				onChange={(e) => {
+					const params = new URLSearchParams(window.location.search);
+					params.set("q", e.target.value);
+					window.history.replaceState({}, "", `${window.location.pathname}?${params.toString()}`);
+					setQuery(e.target.value);
+				}}
+				className="h-14 w-[90%] rounded-md border border-gray-400 bg-slate-700 p-2 text-xl text-white shadow-lg md:w-1/2"
+				placeholder="Search for a CPU"
+			/>
+			<div className="flex w-full flex-col items-center gap-6">
+				{data?.map(({ names }, i) => {
+					return (
+						<Fragment key={i}>
+							{names.map((cpu) => (
+								<CPUItem key={cpu.model} model={cpu.model} manufacturer={cpu.manufacturer} />
+							))}
+						</Fragment>
+					);
+				})}
+				{isLoading &&
+					Array.from({ length: 5 })
+						.fill(1)
+						.map((_, i) => <div key={i} className="h-16 w-1/2 animate-pulse rounded-md bg-gray-800" />)}
+				{remainingItems === 0 && <span className="text-xl font-medium">No more CPUs to show</span>}
 			</div>
-
+			<button
+				onClick={() => setSize(size + 1)}
+				disabled={isLoading || remainingItems === 0}
+				className="mb-8 rounded-md border border-slate-200/20 bg-slate-50/5 px-6 py-2 text-slate-100 transition-colors hover:bg-slate-100/10 disabled:pointer-events-none disabled:opacity-50"
+			>
+				Load more
+			</button>
+		</div>
 	);
 };
 

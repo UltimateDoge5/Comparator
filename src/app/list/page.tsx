@@ -1,16 +1,21 @@
 import Search from "../../components/search";
 import type { Metadata } from "next";
+import { openGraph, twitter } from "../shared-metadata";
 
 export const metadata: Metadata = {
 	title: "Search for a CPU",
 	description: "Search for any cpu you want in matter of seconds!",
-	keywords: ["cpu", "search", "comparator", "intel", "amd", "tool", "app","list"],
+	keywords: ["cpu", "search", "comparator", "intel", "amd", "tool", "app", "list"],
 	openGraph: {
+		...openGraph,
 		title: "Search for a CPU",
 		description: "Search for any cpu you want in matter of seconds!",
-		url: "https://prime.pkozak.org",
-		type: "website",
-		locale: "en_US",
+		url: "https://prime.pkozak.org/list",
+	},
+	twitter: {
+		...twitter,
+		title: "Search for a CPU",
+		description: "Search for any cpu you want in matter of seconds!",
 	},
 };
 const Page = ({ searchParams }: { searchParams: { q: string } }) => {

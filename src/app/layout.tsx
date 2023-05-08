@@ -9,29 +9,9 @@ export const metadata = {
 		icon: "/icon.svg",
 	},
 	metadataBase: new URL("https://prime.pkozak.org"),
-	openGraph: {
-		images: [
-			{
-				url: "/logo.png",
-				width: 780,
-				height: 256,
-			},
-		],
-	},
-	twitter: {
-		card: "summary_large_image",
-		creator: "@UltimateDoge",
-		images: [
-			{
-				url: "/logo.png",
-				width: 780,
-				height: 256,
-			},
-		],
-	},
 	themeColor: "black",
 	creator: "Piotr Kozak",
-	applicationName:"PrimeCPU",
+	applicationName: "PrimeCPU",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

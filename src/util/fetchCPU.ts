@@ -34,7 +34,7 @@ const fetchCPU = async (manufacturer: Manufacturer, model: string, noCache = fal
 export const fetchCPUEdge = async (redis: Redis, model: string): Promise<CPU> => {
 	model = model.toLowerCase();
 	const manufacturer = model.includes("intel") ? "intel" : model.includes("amd") ? "amd" : undefined;
-	if (process.env.NODE_ENV === "development") console.log(model, manufacturer);
+	// if (process.env.NODE_ENV === "development") console.log(model, manufacturer);
 
 	let error: { code: number; message: string } | undefined;
 	let result: CPU;

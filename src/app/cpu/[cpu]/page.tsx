@@ -5,6 +5,7 @@ import { capitalize, formatNumber } from "../../../util/formatting";
 import type { Metadata } from "next";
 import { fetchCPUEdge } from "../../../util/fetchCPU";
 import { Redis } from "@upstash/redis";
+import { openGraph, twitter } from "../../shared-metadata";
 
 const redis = Redis.fromEnv();
 export const runtime = "edge";
@@ -21,15 +22,15 @@ export async function generateMetadata({ searchParams }: { searchParams: { cpu: 
 	return {
 		title: `${cpu.name} | PrimeCPU`,
 		description: `Here you'll find all the information you need about the ${cpu.name} processor.`,
-		metadataBase: new URL("https://prime.pkozak.org"),
 		openGraph: {
+			...openGraph,
 			title: `${cpu.name} | PrimeCPU`,
 			description: `Here you'll find all the information you need about the ${cpu.name} processor.`,
 			type: "website",
 			url: `https://prime.pkozak.org/cpu/${searchParams.cpu}`,
 			images: [
 				{
-					url: `https://prime.pkozak.org/cpu/${searchParams.cpu}/image`,
+					url: `/cpu/${searchParams.cpu}/image`,
 					width: 1200,
 					height: 630,
 					alt: `${cpu.name} processor description`,
@@ -37,10 +38,18 @@ export async function generateMetadata({ searchParams }: { searchParams: { cpu: 
 			],
 		},
 		twitter: {
+			...twitter,
 			title: `${cpu.name} | PrimeCPU`,
 			description: `Here you'll find all the information you need about the ${cpu.name} processor.`,
+			images: [
+				{
+					url: `/cpu/${searchParams.cpu}/image`,
+					width: 1200,
+					height: 630,
+					alt: `${cpu.name} processor description`,
+				},
+			],
 		},
-
 	};
 }
 
@@ -285,7 +294,7 @@ type Row = { title: string; hideOnUndefined?: true; tooltip?: string } & ( // Pr
 	| { type: "component"; component: ({ cpu }: { cpu: CPU }) => JSX.Element }
 	| { type: "string"; capitalize?: true; path: string }
 	| { type: "date"; path: string }
-	);
+);
 
 const traversePath = (path: string, obj: any) => path.split(".").reduce((prev, curr) => prev && prev[curr], obj);
 

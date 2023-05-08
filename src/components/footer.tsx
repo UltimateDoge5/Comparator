@@ -10,12 +10,7 @@ const Footer = () => (
 
 		<p className="text-white">
 			Source code available on
-			<a
-				className="text-blue-500"
-				href="https://github.com/UltimateDoge5/Comparator"
-				target="_blank"
-				rel="noreferrer"
-			>
+			<a className="text-blue-500" href="https://github.com/UltimateDoge5/Comparator" target="_blank" rel="noreferrer">
 				{" "}
 				GitHub{" "}
 			</a>

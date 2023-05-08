@@ -1,44 +1,12 @@
-"use client"
+"use client";
 import type { CPU, Graphics } from "../../CPU";
-import { Fragment, useEffect } from "react";
+import { Fragment } from "react";
 import { domAnimation, LazyMotion, m } from "framer-motion";
 import { capitalize, colorDiff, formatNumber } from "../util/formatting";
-import { toast } from "react-toastify";
 import Link from "next/link";
 
 // Compare two CPUs
 const Table = ({ cpus }: { cpus: [CPU, CPU] }) => {
-	useEffect(() => {
-		(async () => {
-			let i = 0;
-			for (const cpu of cpus) {
-				if (cpu.marketSegment === "desktop" && cpu.MSRP === null && cpu.manufacturer === "amd") {
-					const $toast = toast.loading("Loading price for " + cpu.name + "...");
-					const res = await fetch(`/api/cpu/getPrice?model=${cpu.name}`);
-
-					if (res.ok) {
-						const price = await res.json();
-						(document.querySelector("#price-" + i) as HTMLSpanElement).innerHTML = price + "$";
-						toast.update($toast, {
-							render: "Price for " + cpu.name + " loaded",
-							type: "success",
-							autoClose: 2500,
-							isLoading: false,
-						});
-					} else {
-						toast.update($toast, {
-							render: "Failed to load price for " + cpu.name,
-							type: "error",
-							autoClose: 2500,
-							isLoading: false,
-						});
-					}
-				}
-				i++;
-			}
-		})();
-	}, [cpus]);
-
 	return (
 		<LazyMotion features={domAnimation}>
 			<m.div

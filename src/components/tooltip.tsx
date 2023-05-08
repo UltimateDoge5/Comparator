@@ -1,6 +1,4 @@
 const Tooltip = ({ tip }: { tip: string }) => {
-
-
 	return (
 		<div className="relative inline-block text-left">
 			<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="peer h-4 w-4 cursor-help">
