@@ -5,9 +5,9 @@ export const openGraph: Metadata["openGraph"] = {
 	locale: "en_US",
 	images: [
 		{
-			url: "/logo.png",
-			width: 780,
-			height: 256,
+			url: "/banner.png",
+			width: 1200,
+			height: 628,
 		},
 	],
 };
@@ -17,9 +17,9 @@ export const twitter: Metadata["twitter"] = {
 	creator: "@UltimateDoge",
 	images: [
 		{
-			url: "/logo.png",
-			width: 780,
-			height: 256,
+			url: "/banner.png",
+			width: 1200,
+			height: 628,
 		},
 	],
 };

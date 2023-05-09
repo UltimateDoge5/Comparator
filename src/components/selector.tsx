@@ -67,7 +67,7 @@ const Selector = ({ setCPU, urlId, initialSelection }: SelectorProps) => {
 			});
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [selection.manufacturer]);
+	}, [selection.manufacturer, selection.model]);
 
 	// Manage the search tip results
 	useEffect(() => {
@@ -143,7 +143,7 @@ const Selector = ({ setCPU, urlId, initialSelection }: SelectorProps) => {
 
 						if (e.key === "Enter") {
 							setShowResults(false);
-							setSelection({ model: tempModel });
+							setSelection({ model: tempModel, state: "loading" });
 						}
 					}}
 					onBlur={() => setShowResults(false)}
