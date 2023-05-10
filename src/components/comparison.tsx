@@ -7,7 +7,7 @@ import { Transition } from "@headlessui/react";
 import Table from "./table";
 import { ToastContainer } from "react-toastify";
 
-const Comparison = ({ f, s }: { f: Selection, s: Selection }) => {
+const Comparison = ({ f, s }: { f: Selection; s: Selection }) => {
 	const [cpus, setCpus] = useState<[CPU | null, CPU | null]>([null, null]);
 	const cpusFulfilled = cpus.every((cpu) => cpu !== null);
 
@@ -49,8 +49,8 @@ const Comparison = ({ f, s }: { f: Selection, s: Selection }) => {
 				{cpusFulfilled ? (
 					<Table cpus={cpus as [CPU, CPU]} />
 				) : (
-					 <h3 className="flex items-center gap-2 text-center text-2xl text-white ">Select two CPUs to compare them</h3>
-				 )}
+					<h3 className="flex items-center gap-2 text-center text-2xl text-white ">Select two CPUs to compare them</h3>
+				)}
 			</section>
 			<ToastContainer autoClose={2500} position="bottom-left" theme="dark" draggable={false} />
 		</main>

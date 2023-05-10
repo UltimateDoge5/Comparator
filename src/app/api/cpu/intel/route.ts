@@ -1,9 +1,10 @@
 import { normaliseIntel } from "../../../../util/formatting";
 import scrapeIntel from "../../../../util/scrapers/intel";
 import { NextResponse } from "next/server";
+import { Redis } from "@upstash/redis";
 
+const redis = Redis.fromEnv()
 export const runtime = "edge";
-
 export async function GET(req: Request) {
 	const { searchParams } = new URL(req.url);
 	const model = searchParams.get("model");
@@ -23,7 +24,7 @@ export async function GET(req: Request) {
 
 
 	let error: { code: number; message: string } | undefined;
-	const result = await scrapeIntel(normaliseIntel(model), noCache).catch((err) => (error = err));
+	const result = await scrapeIntel(redis,normaliseIntel(model), noCache).catch((err) => (error = err));
 
 	if (error) return new Response(error.message, { status: error.code });
 	return NextResponse.json(result);

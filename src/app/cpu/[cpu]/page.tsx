@@ -2,11 +2,12 @@ import { Fragment } from "react";
 import type { CPU } from "../../../../CPU";
 import Tooltip from "../../../components/tooltip";
 import { capitalize, formatNumber } from "../../../util/formatting";
-import scrapeAMD from "../../../util/scrapers/amd";
-import scrapeIntel from "../../../util/scrapers/intel";
-import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import { fetchCPUEdge } from "../../../util/fetchCPU";
+import { Redis } from "@upstash/redis";
+import { openGraph, twitter } from "../../shared-metadata";
 
+const redis = Redis.fromEnv();
 export const runtime = "edge";
 
 const DateFormat = new Intl.DateTimeFormat("en-US", {
@@ -15,71 +16,45 @@ const DateFormat = new Intl.DateTimeFormat("en-US", {
 	day: "numeric",
 });
 
-const fetchCPU = async (model: string): Promise<CPU> => {
-	model = model.toLowerCase();
-	const manufacturer = model.includes("intel") ? "intel" : model.includes("amd") ? "amd" : undefined;
-	if (process.env.NODE_ENV === "development") console.log(model, manufacturer);
-
-	let error: { code: number; message: string } | undefined;
-	let result: CPU;
-
-	if (
-		/(core[- ]i\d)(?!.)|(core[- ]i\d[- ])(?!.)/gi.test(model.trim().toLowerCase()) ||
-		model.trim().toLowerCase() === "core"
-	) {
-		notFound();
-	}
-
-	if (manufacturer === "amd") {
-		model = model.replace("™", "");
-		result = await scrapeAMD(model, false).catch((err) => (error = err));
-	} else {
-		result = await scrapeIntel(model, false).catch((err) => (error = err));
-	}
-
-	if (error?.code === 404) {
-		notFound();
-	} else if (error?.code) {
-		throw new Error(`Error ${error.code}: ${error.message}`, { cause: error });
-	}
-
-	return result;
-};
-
 export async function generateMetadata({ searchParams }: { searchParams: { cpu: string } }): Promise<Metadata> {
-	const cpu = await fetchCPU(searchParams.cpu);
+	const cpu = await fetchCPUEdge(redis, searchParams.cpu);
 
 	return {
 		title: `${cpu.name} | PrimeCPU`,
 		description: `Here you'll find all the information you need about the ${cpu.name} processor.`,
-		metadataBase: new URL("https://comparator.pkozak.org"),
 		openGraph: {
+			...openGraph,
 			title: `${cpu.name} | PrimeCPU`,
 			description: `Here you'll find all the information you need about the ${cpu.name} processor.`,
 			type: "website",
-			url: `https://comparator.pkozak.org/cpu/${searchParams.cpu}`,
-			// images: [
-			// 	{
-			// 		url: `/image`,
-			// 		width: 1200,
-			// 		height: 630,
-			// 		alt: `${cpu.name} processor`,
-			// 	},
-			// ],
+			url: `https://prime.pkozak.org/cpu/${searchParams.cpu}`,
+			images: [
+				{
+					url: `/cpu/${searchParams.cpu}/image`,
+					width: 1200,
+					height: 630,
+					alt: `${cpu.name} processor description`,
+				},
+			],
 		},
 		twitter: {
+			...twitter,
 			title: `${cpu.name} | PrimeCPU`,
 			description: `Here you'll find all the information you need about the ${cpu.name} processor.`,
-			card: "summary",
-			creator: "@UltimateDoge",
+			images: [
+				{
+					url: `/cpu/${searchParams.cpu}/image`,
+					width: 1200,
+					height: 630,
+					alt: `${cpu.name} processor description`,
+				},
+			],
 		},
-		themeColor: "black",
-		creator: "Piotr Kozak",
 	};
 }
 
 const Page = async ({ searchParams }: { searchParams: { cpu: string } }) => {
-	const cpu = await fetchCPU(searchParams.cpu);
+	const cpu = await fetchCPUEdge(redis, searchParams.cpu);
 	return (
 		<>
 			<main className="text-white">
@@ -89,7 +64,6 @@ const Page = async ({ searchParams }: { searchParams: { cpu: string } }) => {
 				<div className="mx-auto w-full border-0 border-gray-200/50 bg-white/20 p-4 text-lg md:mb-12 md:w-3/5 md:rounded-md md:border md:p-6">
 					<RenderTable cpu={cpu} list={TableStructure} />
 				</div>
-				{/*<ToastContainer autoClose={2500} position="bottom-left" theme="dark" draggable={false} />*/}
 			</main>
 		</>
 	);
@@ -109,7 +83,7 @@ const RenderTable = ({ cpu, list }: { cpu: CPU; list: Table }) => (
 					>
 						{key}
 					</h2>
-					{Object.keys(list[key]).map((row, j) => {
+					{Object.keys(list[key]).map((row) => {
 						const currentRow = list[key][row];
 
 						if (currentRow.type === "component") {
@@ -320,7 +294,7 @@ type Row = { title: string; hideOnUndefined?: true; tooltip?: string } & ( // Pr
 	| { type: "component"; component: ({ cpu }: { cpu: CPU }) => JSX.Element }
 	| { type: "string"; capitalize?: true; path: string }
 	| { type: "date"; path: string }
-	);
+);
 
 const traversePath = (path: string, obj: any) => path.split(".").reduce((prev, curr) => prev && prev[curr], obj);
 

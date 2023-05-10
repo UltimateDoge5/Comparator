@@ -4,13 +4,11 @@ import type { CPU, Memory } from "../../../CPU";
 import { AMD_PRICES, AMD_PRODUCTS } from "../products";
 import { normaliseMarket } from "../formatting";
 import elementSelector from "../selectors";
-import { Redis } from "@upstash/redis";
+import type { Redis } from "@upstash/redis";
 
 let $: CheerioAPI;
 
-const redis = Redis.fromEnv();
-
-const scrapeAMD = async (model: string, noCache: boolean) =>
+const scrapeAMD = async (redis:Redis, model: string, noCache: boolean) =>
 	new Promise<CPU>(async (resolve, reject) => {
 		let cpu: CPU | null = !noCache ? (await redis.json.get(model.replace(/ /g, "-"), "$"))?.[0] : null;
 		if (cpu !== null && cpu?.schemaVer >= parseFloat(process.env.MIN_SCHEMA_VERSION || "1.1")) return resolve(cpu);

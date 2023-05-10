@@ -11,7 +11,7 @@ export const formatNumber = (num: number | null, unit: string) => {
 
 export const colorDiff = (a: number | null, b: number | null, invert = false) => {
 	if (a === b) return "text-gray-50";
-	if ((a === null || a === undefined) || (b === null || b === undefined)) return "text-yellow-500";
+	if (a === null || a === undefined || b === null || b === undefined) return "text-yellow-500";
 	return (invert ? b > a : a > b) ? "text-green-500" : "text-red-500";
 };
 
@@ -42,3 +42,29 @@ export const normaliseMarket = (market: string | null): MarketType | null => {
 };
 
 export const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1);
+
+// Make the names look nice
+export const beautifyNames = (name: string) => {
+	const split = name.replace("amd", "AMD").split(" "); // AMD is an exception
+	let result = "";
+	for (let i = 0; i < split.length; i++) {
+		const word = split[i];
+		if (word[0] === "i") {
+			result += word;
+			continue;
+		}
+
+		if (word.length > 1) {
+			result += word[0].toUpperCase() + word.slice(1) + " ";
+		} else {
+			result += word.toUpperCase() + " ";
+		}
+	}
+	return result.trim();
+};
+
+// Split the string on the first appearance of the separator
+export const splitFirst = (str: string, separator: string) => {
+	const index = str.indexOf(separator);
+	return [str.substring(0, index), str.substring(index + 1)];
+};
