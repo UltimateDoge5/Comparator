@@ -18,7 +18,9 @@ export async function GET(req: Request) {
 	if (q === null) q = "";
 
 	// Get 5 cpus matching the query
-	const names = INTEL_PRODUCTS.concat(AMD_PRODUCTS.map((p) => p.name)).filter((cpu) => new RegExp(q.trim(), "i").test(cpu));
+	// This regex makes sure that the words in the query are in the name, but not necessarily in the same order
+	const regex = new RegExp(q.split(" ").join(".*"), "i");
+	const names = INTEL_PRODUCTS.concat(AMD_PRODUCTS.map((p) => p.name)).filter((cpu) => regex.test(cpu));
 
 	const remainingItems = Math.max(names.length - Math.max(pInt, 1) * 5, 0);
 

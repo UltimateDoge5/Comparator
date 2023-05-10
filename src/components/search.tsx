@@ -73,13 +73,13 @@ const CPUItem = ({ model, manufacturer }: { model: string; manufacturer: Manufac
 				<Link href={data?.ref || `/cpu/${manufacturer}-${model.toLowerCase()}`}>{model}</Link>
 			</h1>
 
-			<span className={isLoading || error ? "flex h-6 w-24 animate-pulse items-center rounded-md bg-gray-800 text-transparent" : ""}>
+			<span className={isLoading || error ? "flex h-6 w-24 animate-pulse items-center rounded-md bg-gray-800 text-transparent" : "text-center"}>
 				{capitalize(data?.marketSegment || "Unknown market")}
 			</span>
-			<span className={isLoading || error ? "flex h-6 w-24 animate-pulse items-center rounded-md bg-gray-800 text-transparent" : ""}>
+			<span className={isLoading || error ? "flex h-6 w-24 animate-pulse items-center rounded-md bg-gray-800 text-transparent" : "text-center"}>
 				{data?.launchDate || "Date unknown"}
 			</span>
-			<span className={isLoading || error ? "flex h-6 animate-pulse items-center rounded-md bg-gray-800 text-transparent" : ""}>
+			<span className={isLoading || error ? "flex h-6 animate-pulse items-center rounded-md bg-gray-800 text-transparent" : "text-center"}>
 				{data?.MSRP ? `${data.MSRP}$` : "Price unavailable"}
 			</span>
 		</div>

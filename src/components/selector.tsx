@@ -21,8 +21,8 @@ const Selector = ({ setCPU, urlId, initialSelection }: SelectorProps) => {
 	const intervalRef = useRef(0);
 	const barVisible = tempModel !== selection.model && tempModel.length > 3 && selection.state !== "loading";
 
-	const omittedSearch = searchResults.filter((r) => r !== tempModel);
-	const searchTipVisible = showResults && searchResults.length > 0 && tempModel.length > 3;
+	// const omittedSearch = searchResults.filter((r) => r !== tempModel);
+	const searchTipVisible = showResults && searchResults.length > 0 && tempModel.length > 3 && selection.state !== "loading";
 
 	// Handle the countdown bar
 	useEffect(() => {
@@ -80,7 +80,17 @@ const Selector = ({ setCPU, urlId, initialSelection }: SelectorProps) => {
 				await fetch(`/api/cpu/tip?manufacturer=${selection.manufacturer}&model=${tempModel}`)
 					.catch(() => setSearchResults([]))
 					.then((res) => res?.json())
-					.then((res) => setSearchResults(res));
+					.then((res: string[]) => {
+						// Sort the results by length. Make sure the exact match is first
+						// Check for the exact match first
+						const exactMatch = res.findIndex((r) => r.toLowerCase() === tempModel.toLowerCase());
+						if (exactMatch !== -1) {
+							const sorted = [...res.splice(exactMatch, 1), ...res.sort((a, b) => a.length - b.length)];
+							setSearchResults(sorted);
+						} else {
+							setSearchResults(res.sort((a, b) => a.length - b.length));
+						}
+					});
 			}, 350);
 		}
 	}, [selection, tempModel]);
@@ -137,7 +147,7 @@ const Selector = ({ setCPU, urlId, initialSelection }: SelectorProps) => {
 				<input
 					value={tempModel}
 					disabled={selection.state === "loading" || refetch}
-					onFocus={() => omittedSearch.length > 0 && setShowResults(true)}
+					onFocus={() => searchResults.length > 0 && setShowResults(true)}
 					onKeyDown={(e) => {
 						if (tempModel !== selection.model && !showResults) setShowResults(true);
 
@@ -164,10 +174,10 @@ const Selector = ({ setCPU, urlId, initialSelection }: SelectorProps) => {
 				>
 					<div
 						className={`absolute left-5 top-full z-20 flex w-max flex-col rounded-lg bg-white p-2 shadow-md transition-all md:left-0 md:flex-row ${
-							previewPositions[omittedSearch.length - 1]
+							previewPositions[searchResults.length - 1]
 						}`}
 					>
-						{omittedSearch.map((result) => (
+						{searchResults.map((result) => (
 							<button
 								key={result}
 								className="cursor-pointer rounded-md p-2 hover:bg-gray-300 focus:bg-gray-200"
@@ -198,7 +208,7 @@ const Selector = ({ setCPU, urlId, initialSelection }: SelectorProps) => {
 					className={`absolute ${
 						searchTipVisible ? "top-0" : "bottom-0"
 					} left-[2px] -z-10 h-0.5 rounded-full bg-blue-400 transition-all duration-[10ms]`}
-				></div>
+				/>
 			</Transition>
 		</div>
 	);
