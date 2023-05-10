@@ -19,14 +19,14 @@ export const normaliseIntel = (model: string) => {
 	model = model.trim().toLowerCase();
 	// if (!/[core]/gi.test(model)) model = "core " + model;
 	if (/i\d /i.test(model)) model = model.trim().replace(/(i\d) /i, "$1-");
-
 	return model;
 };
 
 export const normaliseMarket = (market: string | null): MarketType | null => {
 	if (market === null) return null;
+
 	switch (market.toLowerCase()) {
-		case "desktop": // Intel
+		case "desktop": // Intel or AMD
 		case "boxed processor": // AMD
 			return "desktop";
 		case "laptop": // AMD

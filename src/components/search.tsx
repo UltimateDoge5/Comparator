@@ -66,11 +66,11 @@ const CPUItem = ({ model, manufacturer }: { model: string; manufacturer: Manufac
 	return (
 		<div
 			key={model}
-			className={`grid min-h-[4rem] w-[90%]  grid-cols-6 grid-rows-1 items-center gap-6 rounded-md border border-slate-600/50 bg-white/5 p-4 transition-colors hover:border-white/50
+			className={`grid min-h-[4rem] w-[90%] grid-cols-6 grid-rows-1 items-center gap-6 rounded-md border border-slate-600/50 bg-white/5 p-4 transition-colors hover:border-white/50
 			 hover:bg-slate-600/50 md:w-3/4 lg:w-1/2 ${getManufacturerColor(manufacturer)} shadow-md`}
 		>
 			<h1 className="col-span-3 text-lg font-medium md:text-2xl">
-				<Link href={data?.ref || `/cpu/${model}`}>{model}</Link>
+				<Link href={data?.ref || `/cpu/${manufacturer}-${model.toLowerCase()}`}>{model}</Link>
 			</h1>
 
 			<span className={isLoading || error ? "flex h-6 w-24 animate-pulse items-center rounded-md bg-gray-800 text-transparent" : ""}>
@@ -80,7 +80,7 @@ const CPUItem = ({ model, manufacturer }: { model: string; manufacturer: Manufac
 				{data?.launchDate || "Date unknown"}
 			</span>
 			<span className={isLoading || error ? "flex h-6 animate-pulse items-center rounded-md bg-gray-800 text-transparent" : ""}>
-				{data?.MSRP ? `${data.MSRP}$` : "Unavailable"}
+				{data?.MSRP ? `${data.MSRP}$` : "Price unavailable"}
 			</span>
 		</div>
 	);

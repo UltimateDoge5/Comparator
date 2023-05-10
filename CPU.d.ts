@@ -13,7 +13,6 @@ export interface CPU {
 	launchDate: string;
 	memory: Memory;
 	graphics: false | Graphics;
-	pcie: string | null;
 	source: string;
 	schemaVer: number;
 	// Url to the cpu page

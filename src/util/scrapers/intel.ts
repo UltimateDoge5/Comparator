@@ -95,8 +95,7 @@ const scrapeIntel = async (redis: Redis, model: string, noCache: boolean) =>
 				performance: getFloatParameter("# of Performance-cores"),
 			},
 			threads: getFloatParameter("Total Threads"),
-			baseFrequency:
-				getFloatParameter("Processor Base Frequency") || getFloatParameter("Performance-core Base Frequency"),
+			baseFrequency: getFloatParameter("Processor Base Frequency") || getFloatParameter("Performance-core Base Frequency"),
 			maxFrequency: getFloatParameter("Max Turbo Frequency"),
 			tdp: getFloatParameter("TDP") || getFloatParameter("Maximum Turbo Power"),
 			launchDate: getParameter("Launch Date") as string,
@@ -105,15 +104,12 @@ const scrapeIntel = async (redis: Redis, model: string, noCache: boolean) =>
 				maxSize: getFloatParameter("Max Memory Size"),
 			},
 			graphics: cpuName?.includes("F")
-			          ? false
-			          : {
-					baseFrequency: getFloatParameter("Graphics Base Frequency"),
-					maxFrequency: getFloatParameter("Graphics Max Dynamic Frequency"),
-					displays:
-						getFloatParameter("Max # of Displays Supported") ??
-						getFloatParameter("# of Displays Supported"),
-				},
-			pcie: getParameter("PCI Express Revision"),
+				? false
+				: {
+						baseFrequency: getFloatParameter("Graphics Base Frequency"),
+						maxFrequency: getFloatParameter("Graphics Max Dynamic Frequency"),
+						displays: getFloatParameter("Max # of Displays Supported") ?? getFloatParameter("# of Displays Supported"),
+				  },
 			source: url,
 			ref: "/cpu/intel-" + model,
 			scrapedAt: new Date().toString(),

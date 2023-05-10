@@ -8,7 +8,7 @@ import type { Redis } from "@upstash/redis";
 
 let $: CheerioAPI;
 
-const scrapeAMD = async (redis:Redis, model: string, noCache: boolean) =>
+const scrapeAMD = async (redis: Redis, model: string, noCache: boolean) =>
 	new Promise<CPU>(async (resolve, reject) => {
 		let cpu: CPU | null = !noCache ? (await redis.json.get(model.replace(/ /g, "-"), "$"))?.[0] : null;
 		if (cpu !== null && cpu?.schemaVer >= parseFloat(process.env.MIN_SCHEMA_VERSION || "1.1")) return resolve(cpu);
@@ -20,23 +20,20 @@ const scrapeAMD = async (redis:Redis, model: string, noCache: boolean) =>
 		}
 
 		//Get the specs page
-		const specsPage = await fetch(
-			`https://${process.env.BROWSERLESS_URL}/content?token=${process.env.BROWSERLESS_TOKEN}`,
-			{
-				method: "POST",
-				body: JSON.stringify({
-					url: url,
-					userAgent:
-						"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.125 Safari/537.36",
-					gotoOptions: {
-						waitUntil: "domcontentloaded",
-					},
-				}),
-				headers: {
-					"Content-Type": "application/json",
+		const specsPage = await fetch(`https://${process.env.BROWSERLESS_URL}/content?token=${process.env.BROWSERLESS_TOKEN}`, {
+			method: "POST",
+			body: JSON.stringify({
+				url: url,
+				userAgent:
+					"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.125 Safari/537.36",
+				gotoOptions: {
+					waitUntil: "domcontentloaded",
 				},
+			}),
+			headers: {
+				"Content-Type": "application/json",
 			},
-		);
+		});
 
 		if (process.env.NODE_ENV === "development") console.log("Fetching page: ", url);
 
@@ -52,9 +49,10 @@ const scrapeAMD = async (redis:Redis, model: string, noCache: boolean) =>
 		// Get the msrp before model name change
 		const msrp = AMD_PRICES[model.replace("amd", "").trim() as keyof typeof AMD_PRICES] || null;
 		model = model.replace(/ /g, "-").toLowerCase();
+		const name = $(".section-title").text().trim();
 
 		cpu = {
-			name: $(".section-title").text().trim(),
+			name,
 			manufacturer: "amd",
 			MSRP: msrp,
 			marketSegment: normaliseMarket(getParameter("Platform")),
@@ -72,20 +70,19 @@ const scrapeAMD = async (redis:Redis, model: string, noCache: boolean) =>
 			launchDate: getLaunchDate(getParameter("Launch Date") ?? ""),
 			memory: {
 				types: getMemoryDetails(),
-				maxSize:
-					getFloatParameter("Max Memory Size (dependent on memory type)") || getFloatParameter("Max. Memory"),
+				maxSize: getFloatParameter("Max Memory Size (dependent on memory type)") || getFloatParameter("Max. Memory"),
 			},
 			graphics:
 				getParameter("Integrated Graphics") === "Yes"
-				? {
-						baseFrequency: getFloatParameter("GPU Base") ??
-							getFloatParameter("Graphics Base Frequency") ??
-							getFloatParameter("Graphics Frequency"),
-						maxFrequency: getFloatParameter("Graphics Frequency") ?? getFloatParameter("Graphics Max Dynamic Frequency"),
-						displays: getFloatParameter("Max Displays") ?? getFloatParameter("Max # of Displays Supported"),
-					}
-				: false,
-			pcie: getParameter("PCI Express Revision"),
+					? {
+							baseFrequency:
+								getFloatParameter("GPU Base") ??
+								getFloatParameter("Graphics Base Frequency") ??
+								getFloatParameter("Graphics Frequency"),
+							maxFrequency: getFloatParameter("Graphics Frequency") ?? getFloatParameter("Graphics Max Dynamic Frequency"),
+							displays: getFloatParameter("Max Displays") ?? getFloatParameter("Max # of Displays Supported"),
+					  }
+					: false,
 			source: url,
 			ref: "/cpu/" + model,
 			scrapedAt: new Date().toString(),
@@ -96,8 +93,7 @@ const scrapeAMD = async (redis:Redis, model: string, noCache: boolean) =>
 		resolve(cpu);
 	});
 
-const getParameter = (name: string) =>
-	elementSelector($, ".field__label", name)?.parent().find(".field__item").text().trim() || null;
+const getParameter = (name: string) => elementSelector($, ".field__label", name)?.parent().find(".field__item").text().trim() || null;
 
 // AMD doesn't space the values and units, but they set a meta-tag with the value
 const getFloatParameter = (name: string, normalize = true) => {
@@ -126,20 +122,22 @@ const getLaunchDate = (string: string) => {
 	if (!string) return "Unknown";
 	if (/Q\d \d{4}/.test(string)) return string;
 
+	// Format: 11/5/2020
+	const date = new Date(string);
+	let month = date.getMonth() + 1;
+	let year = date.getFullYear();
+
 	// Format: 7/2020
 	// https://www.amd.com/en/product/9936
-	if (/\d\/\d{4}/.test(string)) {
-		const [month, year] = string.split("/");
-		const quarter = Math.floor((parseInt(month) + 1) / 3) + 1;
-		return `Q${quarter}'${year.substring(2)}`;
+	if (year == 1970 && /\d\/\d{4}/.test(string)) {
+		const dates = string.split("/");
+		month = parseInt(dates[0]);
+		year = parseInt(dates[1]);
 	}
 
-	const date = new Date(string);
-
-	if (date.getFullYear() == 1970) return "Unknown";
-
-	const quarter = Math.floor((date.getMonth() + 1) / 3) + 1;
-	return `Q${quarter}'${date.getFullYear().toString().substring(2)}`;
+	if (year == 1970) return "Unknown";
+	const quarter = Math.floor((month + 2) / 3) + 1;
+	return `Q${quarter}'${year.toString().substring(2)}`;
 };
 
 export const getMemoryDetails = (testObj?: {
@@ -149,7 +147,6 @@ export const getMemoryDetails = (testObj?: {
 }): Memory["types"] => {
 	const memory = testObj?.memory ?? getParameter("System Memory Type");
 	if (!memory) return [];
-
 	// Example:
 	// DDR4 - Up to 3200MHz
 	// LPDDR4 - Up to 4266MHz
@@ -182,8 +179,7 @@ export const getMemoryDetails = (testObj?: {
 	}
 
 	const speeds =
-		testObj?.maxMemSpeeds ??
-		elementSelector($, ".field__label", "Max Memory Speed")?.parent().find(".key__values").text().trim();
+		testObj?.maxMemSpeeds ?? elementSelector($, ".field__label", "Max Memory Speed")?.parent().find(".key__values").text().trim();
 	if (!speeds) return [];
 
 	// If there is only one type of memory, return it
