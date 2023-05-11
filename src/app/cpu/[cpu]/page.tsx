@@ -6,6 +6,7 @@ import type { Metadata } from "next";
 import { fetchCPUEdge } from "../../../util/fetchCPU";
 import { Redis } from "@upstash/redis";
 import { openGraph, twitter } from "../../shared-metadata";
+import Refetch from "../../../components/refetch";
 
 const redis = Redis.fromEnv();
 export const runtime = "edge";
@@ -17,7 +18,7 @@ const DateFormat = new Intl.DateTimeFormat("en-US", {
 });
 
 export async function generateMetadata({ searchParams }: { searchParams: { cpu: string } }): Promise<Metadata> {
-	const cpu = await fetchCPUEdge(redis, searchParams.cpu);
+	const cpu = await fetchCPUEdge(redis, searchParams.cpu, false);
 
 	return {
 		title: `${cpu.name} | PrimeCPU`,
@@ -53,13 +54,14 @@ export async function generateMetadata({ searchParams }: { searchParams: { cpu: 
 	};
 }
 
-const Page = async ({ searchParams }: { searchParams: { cpu: string } }) => {
-	const cpu = await fetchCPUEdge(redis, searchParams.cpu);
+const Page = async ({ searchParams }: { searchParams: { cpu: string; refetch: string } }) => {
+	const cpu = await fetchCPUEdge(redis, searchParams.cpu, searchParams.refetch == "true");
 	return (
 		<>
 			<main className="text-white">
 				<div className="my-4 flex justify-center gap-4">
 					<h1 className="text-3xl">{cpu.name}</h1>
+					<Refetch modelPath={searchParams.cpu} />
 				</div>
 				<div className="mx-auto w-full border-0 border-gray-200/50 bg-white/20 p-4 text-lg md:mb-12 md:w-3/5 md:rounded-md md:border md:p-6">
 					<RenderTable cpu={cpu} list={TableStructure} />

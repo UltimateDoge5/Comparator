@@ -10,7 +10,7 @@ export async function GET(req: Request, { params }: { params: { cpu: string } })
 	const { cpu } = params;
 	if (!cpu) return new Response("No CPU specified", { status: 400 });
 
-	const data = await fetchCPUEdge(redis, cpu);
+	const data = await fetchCPUEdge(redis, cpu, false);
 
 	return new ImageResponse(
 		(

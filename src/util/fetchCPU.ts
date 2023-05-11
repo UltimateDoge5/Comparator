@@ -2,13 +2,11 @@ import type { CPU, Manufacturer } from "../../CPU";
 import { notFound } from "next/navigation";
 import scrapeAMD from "./scrapers/amd";
 import scrapeIntel from "./scrapers/intel";
-import { Redis } from "@upstash/redis";
+import type { Redis } from "@upstash/redis";
 
 const fetchCPU = async (manufacturer: Manufacturer, model: string, noCache = false) =>
 	new Promise<Result>(async (resolve) => {
-		const response = await fetch(
-			`/api/cpu/${manufacturer.toLowerCase()}?model=${model}&${noCache ? "no-cache" : ""}`,
-		);
+		const response = await fetch(`/api/cpu/${manufacturer.toLowerCase()}?model=${model}&${noCache ? "no-cache" : ""}`);
 
 		if (!response.ok) {
 			let errorText = await response.text();
@@ -31,7 +29,7 @@ const fetchCPU = async (manufacturer: Manufacturer, model: string, noCache = fal
 		resolve({ data: (await response.json()) as CPU, error: null });
 	});
 
-export const fetchCPUEdge = async (redis: Redis, model: string): Promise<CPU> => {
+export const fetchCPUEdge = async (redis: Redis, model: string, noCache: boolean): Promise<CPU> => {
 	model = model.toLowerCase();
 	const manufacturer = model.includes("intel") ? "intel" : model.includes("amd") ? "amd" : undefined;
 	// if (process.env.NODE_ENV === "development") console.log(model, manufacturer);
@@ -39,18 +37,15 @@ export const fetchCPUEdge = async (redis: Redis, model: string): Promise<CPU> =>
 	let error: { code: number; message: string } | undefined;
 	let result: CPU;
 
-	if (
-		/(core[- ]i\d)(?!.)|(core[- ]i\d[- ])(?!.)/gi.test(model.trim().toLowerCase()) ||
-		model.trim().toLowerCase() === "core"
-	) {
+	if (/(core[- ]i\d)(?!.)|(core[- ]i\d[- ])(?!.)/gi.test(model.trim().toLowerCase()) || model.trim().toLowerCase() === "core") {
 		notFound();
 	}
 
 	if (manufacturer === "amd") {
-		model = model.replace("™", "");
-		result = await scrapeAMD(redis, model, false).catch((err) => (error = err));
+		model = model.replace("™", "").replaceAll("-"," ");
+		result = await scrapeAMD(redis, model, noCache).catch((err) => (error = err));
 	} else {
-		result = await scrapeIntel(redis, model, false).catch((err) => (error = err));
+		result = await scrapeIntel(redis, model, noCache).catch((err) => (error = err));
 	}
 
 	if (error?.code === 404) {
