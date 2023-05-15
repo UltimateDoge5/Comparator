@@ -6,7 +6,7 @@ import type { Redis } from "@upstash/redis";
 
 const fetchCPU = async (manufacturer: Manufacturer, model: string, noCache = false) =>
 	new Promise<Result>(async (resolve) => {
-		const response = await fetch(`/api/cpu/${manufacturer.toLowerCase()}?model=${model}&${noCache ? "no-cache" : ""}`);
+		const response = await fetch(`/api/${manufacturer.toLowerCase()}?model=${model}&${noCache ? "no-cache" : ""}`);
 
 		if (!response.ok) {
 			let errorText = await response.text();

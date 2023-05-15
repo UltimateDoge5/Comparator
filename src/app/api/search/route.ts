@@ -1,5 +1,5 @@
-import { beautifyNames } from "../../../../util/formatting";
-import { AMD_PRODUCTS, INTEL_PRODUCTS } from "../../../../util/products";
+import { beautifyNames } from "../../../util/formatting";
+import { AMD_PRODUCTS, INTEL_PRODUCTS } from "../../../util/products";
 import { NextResponse } from "next/server";
 
 export const runtime = "edge";
@@ -12,7 +12,6 @@ export async function GET(req: Request) {
 	// Can assert types - null checks are still there
 	let q = searchParams.get("q") as string;
 	let p = searchParams.get("p") as string;
-
 	if (p === null) p = "1";
 	const pInt = parseInt(p) < 1 ? 1 : parseInt(p) - 1; //The app starts at p = 1, but we start at 0
 	if (q === null) q = "";

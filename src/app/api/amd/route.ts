@@ -1,4 +1,4 @@
-import scrapeAMD from "../../../../util/scrapers/amd";
+import scrapeAMD from "../../../util/scrapers/amd";
 import { NextResponse } from "next/server";
 import { Redis } from "@upstash/redis";
 

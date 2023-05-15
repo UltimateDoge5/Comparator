@@ -14,7 +14,7 @@ const Search = ({ initialQuery }: { initialQuery: string }) => {
 	const { data, size, setSize, isLoading } = useSWRInfinite<{
 		names: { model: string; manufacturer: Manufacturer }[];
 		remainingItems: number;
-	}>((index) => `/api/cpu/search?q=${query}&p=${index + 1}`, fetcher);
+	}>((index) => `/api/search?q=${query}&p=${index + 1}`, fetcher);
 
 	const remainingItems = data?.[data.length - 1]?.remainingItems || 0;
 
@@ -61,7 +61,7 @@ const Search = ({ initialQuery }: { initialQuery: string }) => {
 };
 
 const CPUItem = ({ model, manufacturer }: { model: string; manufacturer: Manufacturer }) => {
-	const { data, error, isLoading } = useSWR<CPU>(`/api/cpu/${manufacturer}?model=${model}`, fetcher, {});
+	const { data, error, isLoading } = useSWR<CPU>(`/api/${manufacturer}?model=${model}`, fetcher, {});
 
 	return (
 		<div

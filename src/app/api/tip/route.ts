@@ -1,4 +1,4 @@
-import { AMD_PRODUCTS, INTEL_PRODUCTS } from "../../../../util/products";
+import { AMD_PRODUCTS, INTEL_PRODUCTS } from "../../../util/products";
 import { NextResponse } from "next/server";
 
 export const runtime = "edge";

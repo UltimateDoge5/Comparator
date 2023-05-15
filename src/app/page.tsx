@@ -55,7 +55,7 @@ export const generateMetadata = ({ searchParams }: { searchParams: { f: string; 
 const getInitialSelection = (param: string): Selection => {
 	if (param === undefined) return { model: "", manufacturer: "intel", state: "idle" };
 	const [manufacturer, model] = splitFirst(param, "-").map((s) => decodeURI(s));
-	return { model, manufacturer: manufacturer as "intel" | "amd", state: "loading" };
+	return { model: beautifyNames(model), manufacturer: manufacturer as "intel" | "amd", state: "loading" };
 };
 
 export default function Page({ searchParams }: { searchParams: { f: string; s: string } }) {

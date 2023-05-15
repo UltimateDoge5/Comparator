@@ -77,20 +77,19 @@ const Selector = ({ setCPU, urlId, initialSelection }: SelectorProps) => {
 
 			// Start a new search
 			searchRef.current = window.setTimeout(async () => {
-				await fetch(`/api/cpu/tip?manufacturer=${selection.manufacturer}&model=${tempModel}`)
-					.catch(() => setSearchResults([]))
-					.then((res) => res?.json())
-					.then((res: string[]) => {
-						// Sort the results by length. Make sure the exact match is first
-						// Check for the exact match first
-						const exactMatch = res.findIndex((r) => r.toLowerCase() === tempModel.toLowerCase());
-						if (exactMatch !== -1) {
-							const sorted = [...res.splice(exactMatch, 1), ...res.sort((a, b) => a.length - b.length)];
-							setSearchResults(sorted);
-						} else {
-							setSearchResults(res.sort((a, b) => a.length - b.length));
-						}
-					});
+				const res = await fetch(`/api/tip?manufacturer=${selection.manufacturer}&model=${tempModel}`);
+
+				if (!res.ok) return setSearchResults([]);
+				const tips = (await res.json()) as string[];
+				// Sort the results by length. Make sure the exact match is first
+				// Check for the exact match first
+				const exactMatch = tips.findIndex((r) => r.toLowerCase() === tempModel.toLowerCase());
+				if (exactMatch !== -1) {
+					const sorted = [...tips.splice(exactMatch, 1), ...tips.sort((a, b) => a.length - b.length)];
+					setSearchResults(sorted);
+				} else {
+					setSearchResults(tips.sort((a, b) => a.length - b.length));
+				}
 			}, 350);
 		}
 	}, [selection, tempModel]);
@@ -183,6 +182,7 @@ const Selector = ({ setCPU, urlId, initialSelection }: SelectorProps) => {
 								className="cursor-pointer rounded-md p-2 hover:bg-gray-300 focus:bg-gray-200"
 								onClick={() => {
 									setTempModel(result);
+									setSelection({ model: result, state: "loading" });
 									setShowResults(false);
 								}}
 							>
