@@ -11,7 +11,7 @@ let $: CheerioAPI;
 const scrapeAMD = async (redis: Redis, model: string, noCache: boolean) =>
 	new Promise<CPU>(async (resolve, reject) => {
 		let cpu: CPU | null = !noCache ? (await redis.json.get(model.replace(/ /g, "-"), "$"))?.[0] : null;
-		if (cpu !== null && cpu?.schemaVer >= parseFloat(process.env.MIN_SCHEMA_VERSION || "1.1")) return resolve(cpu);
+		if (cpu !== null && cpu?.schemaVer === parseFloat(process.env.MIN_SCHEMA_VERSION)) return resolve(cpu);
 
 		const url = AMD_PRODUCTS.find((item) => item.name.replace("™", "").toLowerCase() === model)?.url;
 		if (!url) {
@@ -86,7 +86,7 @@ const scrapeAMD = async (redis: Redis, model: string, noCache: boolean) =>
 			source: url,
 			ref: "/cpu/" + model,
 			scrapedAt: new Date().toString(),
-			schemaVer: 1.2,
+			schemaVer: parseFloat(process.env.MIN_SCHEMA_VERSION),
 		};
 
 		if (process.env.NODE_ENV !== "test") await redis.json.set(model, "$", cpu as Record<string, any>);

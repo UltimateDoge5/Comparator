@@ -9,7 +9,7 @@ const Tooltip = ({ tip }: { tip: string }) => {
 				/>
 			</svg>
 
-			<div className="absolute top-full z-10 w-max max-w-md rounded-md bg-gray-800 p-2 text-sm text-white opacity-0 transition-all peer-hover:opacity-100">
+			<div className="pointer-events-none absolute top-full z-10 w-max max-w-md rounded-md bg-gray-800 p-2 text-sm text-white opacity-0 transition-all peer-hover:pointer-events-auto peer-hover:opacity-100">
 				{tip}
 			</div>
 		</div>

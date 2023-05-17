@@ -204,6 +204,13 @@ const TableStructure: Table = {
 			unit: "$",
 			tooltip: "Manufacturer's suggested retail price. For AMDs may not be as accurate.",
 		},
+		cache: {
+			title: "Cache",
+			path: "cache",
+			type: "number",
+			unit: "B",
+			tooltip: "Amount of L3 cache. (Intel provides only L3 cache)",
+		}
 	},
 	"CPU specifications": {
 		baseFrequency: {

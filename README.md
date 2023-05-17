@@ -1,4 +1,4 @@
-![PrimeCPU logo](./docs/banner.png)
+![PrimeCPU logo](./public/banner.png)
 
 A simple [web app](https://prime.pkozak.org) for comparing cpus. No bloat, just quick and easy comparison.  
 This project was build with backwards compatibility in mind, so that even 12-year-old cpus can be compared.
