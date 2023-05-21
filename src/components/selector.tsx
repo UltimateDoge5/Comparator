@@ -7,7 +7,7 @@ import { ReloadIcon } from "./icons";
 import { domAnimation, LazyMotion, m, useTime, useTransform } from "framer-motion";
 import { toast } from "react-toastify";
 
-const Selector = ({ setCPU, urlId, initialSelection }: SelectorProps) => {
+const Selector = ({ setCPU, index, setModelName, initialSelection }: SelectorProps) => {
 	const [selection, setSelection] = useReducer((prev: Selection, next: Partial<Selection>) => ({ ...prev, ...next }), initialSelection);
 
 	const [tempModel, setTempModel] = useState(initialSelection.model);
@@ -58,10 +58,7 @@ const Selector = ({ setCPU, urlId, initialSelection }: SelectorProps) => {
 				}
 
 				// Update the URL after successful fetch
-				const url = new URL(window.location.href);
-				url.searchParams.set(urlId, `${selection.manufacturer}-${selection.model.toLowerCase()}`);
-				window.history.pushState({}, "", url.toString());
-
+				setModelName(`${selection.manufacturer}-${selection.model.toLowerCase()}`);
 				setSelection({ state: "success" });
 				setCPU(cpu.data);
 			});
@@ -232,8 +229,9 @@ const getMarkings = (state: Selection["state"]) => {
 
 interface SelectorProps {
 	setCPU: (cpu: CPU | null) => void;
-	urlId: string;
+	setModelName: (name: string) => void;
 	initialSelection: Selection;
+	index: number;
 }
 
 export interface Selection {
