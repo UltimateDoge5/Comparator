@@ -16,7 +16,7 @@ export const generateMetadata = ({ searchParams }: { searchParams: { f: string; 
 		const [fName, sName] = [f, s].map((s) => beautifyNames(s || ""));
 		title = `${fName} vs ${sName}`;
 		description = `Compare ${fName} and ${sName} in an instant!`;
-		image = `/api/banner?f=${searchParams.f}&s=${s}`;
+		image = `/api/banner?f=${fName}&s=${sName}`;
 	}
 
 	return {

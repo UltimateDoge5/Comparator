@@ -10,7 +10,7 @@ let $: CheerioAPI;
 const scrapeIntel = async (redis: Redis, model: string, noCache: boolean) =>
 	new Promise<CPU>(async (resolve, reject) => {
 		let cpu: CPU | null = !noCache ? (await redis.json.get(`intel-${model.replace(/ /g, "-")}`, "$"))?.[0] : null;
-		if (cpu !== null &&  cpu?.schemaVer === parseFloat(process.env.MIN_SCHEMA_VERSION)) return resolve(cpu);
+		if (cpu !== null && cpu?.schemaVer === parseFloat(process.env.MIN_SCHEMA_VERSION)) return resolve(cpu);
 
 		const token = (await redis.get<string>("intel-token")) ?? (await refreshToken(redis));
 
@@ -96,7 +96,7 @@ const scrapeIntel = async (redis: Redis, model: string, noCache: boolean) =>
 			threads: getFloatParameter("Total Threads"),
 			baseFrequency: getFloatParameter("Processor Base Frequency") || getFloatParameter("Performance-core Base Frequency"),
 			maxFrequency: getFloatParameter("Max Turbo Frequency"),
-			tdp: getFloatParameter("TDP") || getFloatParameter("Maximum Turbo Power"),
+			tdp: getFloatParameter("Configurable TDP-up") || getFloatParameter("TDP") || getFloatParameter("Maximum Turbo Power"),
 			launchDate: getParameter("Launch Date") as string,
 			memory: {
 				types: getMemoryDetails(),
