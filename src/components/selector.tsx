@@ -7,7 +7,7 @@ import { ReloadIcon } from "./icons";
 import { domAnimation, LazyMotion, m, useTime, useTransform } from "framer-motion";
 import { toast } from "react-toastify";
 
-const Selector = ({ setCPU, index, setModelName, initialSelection }: SelectorProps) => {
+const Selector = ({ setCPU, setModelName, initialSelection }: SelectorProps) => {
 	const [selection, setSelection] = useReducer((prev: Selection, next: Partial<Selection>) => ({ ...prev, ...next }), initialSelection);
 
 	const [tempModel, setTempModel] = useState(initialSelection.model);
@@ -148,6 +148,7 @@ const Selector = ({ setCPU, index, setModelName, initialSelection }: SelectorPro
 						if (tempModel !== selection.model && !showResults) setShowResults(true);
 
 						if (e.key === "Enter") {
+							if (tempModel === selection.model) return;
 							setShowResults(false);
 							setSelection({ model: tempModel, state: "loading" });
 						}
@@ -217,7 +218,7 @@ const previewPositions = ["", "-left-1/4", "-left-1/2"];
 const getMarkings = (state: Selection["state"]) => {
 	switch (state) {
 		case "loading":
-			return "bg-yellow-400/10 border-yellow-500 hover:border-yellow-400";
+			return "bg-yellow-400/10 border-yellow-500 hover:border-yellow-400 pulse";
 		case "error":
 			return "bg-red-400/10 border-red-500 hover:border-red-400";
 		case "success":
@@ -231,7 +232,6 @@ interface SelectorProps {
 	setCPU: (cpu: CPU | null) => void;
 	setModelName: (name: string) => void;
 	initialSelection: Selection;
-	index: number;
 }
 
 export interface Selection {

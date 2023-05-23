@@ -7,7 +7,7 @@ import type { Selection } from "../../components/selector";
 export const runtime = "edge";
 
 export const generateMetadata = ({ params }: { params: { models: string } }): Metadata => {
-	const models = params.models.split(",").map((s) => splitFirst(decodeURI(s), "-").pop() as string);
+	const models = params.models.split("&").map((s) => splitFirst(decodeURI(s), "-").pop() as string);
 
 	let title = "Compare any CPU you want";
 	let description = "PrimeCPU lets you compare CPUs and GPUs in an instant!";
@@ -59,7 +59,7 @@ const getInitialSelections = (params: string): Selection[] => {
 			{ manufacturer: "intel", state: "idle", model: "" },
 		];
 
-	const models = decodeURIComponent(params).split(",");
+	const models = decodeURIComponent(params).split("&");
 	const selections = models.map((model) => {
 		const [manufacturer, name] = splitFirst(model, "-");
 		// If the manufacturer is not intel or amd, default to intel
