@@ -71,7 +71,7 @@ const Comparison = ({ models }: { models: Selection[] }) => {
 				</Transition>
 
 				{cpusFulfilled ? (
-					<div className="mx-auto w-full border-0 border-gray-200/50 bg-white/20 p-4 text-lg text-white md:mb-12 md:w-3/5 md:rounded-md md:border md:p-6">
+					<div className="mx-auto w-full border-0 border-gray-200/50 bg-white/20 p-4 text-lg text-white md:mb-12 md:w-full md:rounded-md md:border md:p-6">
 						<RenderTwoColumnTable cpus={cpus as [CPU, CPU]} list={TableStructure} />
 					</div>
 				) : (
