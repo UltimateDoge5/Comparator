@@ -1,14 +1,13 @@
 "use client";
 import { Fragment, useEffect, useState } from "react";
 import type { CPU } from "../../CPU";
-import { Graphics } from "../../CPU";
 import type { Selection } from "./selector";
 import Selector from "./selector";
 import { Transition } from "@headlessui/react";
 import { ToastContainer } from "react-toastify";
 import type { Table } from "../util/renderers";
 import { RenderTwoColumnTable } from "../util/renderers";
-import { colorDiff, formatNumber } from "../util/formatting";
+import { colorDiff } from "../util/formatting";
 
 const Comparison = ({ models }: { models: Selection[] }) => {
 	const [cpus, setCpus] = useState<(CPU | null)[]>([null, null]);
@@ -83,107 +82,7 @@ const Comparison = ({ models }: { models: Selection[] }) => {
 	);
 };
 
-const TableStructure: Table<CPU[]> = {
-	General: {
-		launchDate: {
-			title: "Launch Date",
-			path: "launchDate",
-			type: "string",
-		},
-		market: {
-			title: "Market",
-			path: "marketSegment",
-			type: "string",
-			capitalize: true,
-		},
-		lithography: {
-			title: "Lithography",
-			path: "lithography",
-			type: "string",
-		},
-		msrp: {
-			title: "Price",
-			path: "MSRP",
-			type: "number",
-			unit: "$",
-			tooltip: "Manufacturer's suggested retail price. For AMDs may not be as accurate.",
-		},
-		cache: {
-			title: "Cache",
-			path: "cache",
-			type: "number",
-			unit: "B",
-			tooltip: "Amount of L3 cache. (Intel provides only L3 cache)",
-		},
-	},
-	"CPU specifications": {
-		baseFrequency: {
-			hideOnUndefined: true,
-			title: "Base Frequency",
-			path: "baseFrequency",
-			type: "number",
-			unit: "Hz",
-		},
-		maxFrequency: {
-			title: "Max Frequency",
-			path: "maxFrequency",
-			type: "number",
-			unit: "Hz",
-		},
-		// cores: {
-		// 	title: "Cores",
-		// 	type: "component",
-		// 	component: Cores,
-		// 	tooltip: "Displays total amount of cores. For some Intel cpus, it also displays the amount of performance and efficient cores.",
-		// },
-		tdp: {
-			title: "TDP",
-			path: "tdp",
-			type: "number",
-			unit: "W",
-		},
-	},
-	"Memory specifications": {
-		// memory: {
-		// 	title: "Memory",
-		// 	type: "component",
-		// 	component: Memory,
-		// },
-		capacity: {
-			title: "Max Capacity",
-			path: "memory.maxSize",
-			type: "number",
-			unit: "B",
-		},
-	},
-	"GPU specifications": {
-		baseClock: {
-			title: "Base Clock",
-			path: "graphics.baseFrequency",
-			type: "number",
-			unit: "Hz",
-			hideOnUndefined: true,
-		},
-		maxClock: {
-			title: "Max Clock",
-			path: "graphics.maxFrequency",
-			type: "number",
-			unit: "Hz",
-			hideOnUndefined: true,
-		},
-		display: {
-			title: "Displays",
-			path: "graphics.displays",
-			type: "number",
-			unit: "",
-			hideOnUndefined: true,
-		},
-	}
-};
-
-
-// Old comparison functions
-const MemoryComparison = ({ cpus }: { cpus: CPU[] }) => {
+const Memory = ({ cpus }: { cpus: CPU[] }) => {
 	const matchingTypes = cpus[0].memory.types
 		.filter((type) => cpus[1].memory.types.some((type2) => type2?.type === type?.type))
 		.map((type) => type?.type);
@@ -197,7 +96,7 @@ const MemoryComparison = ({ cpus }: { cpus: CPU[] }) => {
 	return (
 		<>
 			{cpus.map((cpu, i) => (
-				<td className="p-2" key={cpu.name}>
+				<td key={cpu.name}>
 					{memorySpeeds.map(({ type, a, b }) => (
 						<Fragment key={type}>
 							<span className={i % 2 ? colorDiff(b, a) : colorDiff(a, b)}>
@@ -222,76 +121,145 @@ const MemoryComparison = ({ cpus }: { cpus: CPU[] }) => {
 	);
 };
 
-const GraphicsComparison = ({ cpus }: { cpus: CPU[] }) => {
-	if (cpus.filter((cpu) => cpu.graphics).length === 0) {
-		return (
-			<tr>
-				<td colSpan={3}>No graphics</td>
-			</tr>
-		);
-	}
+const Cores = ({ cpus }: { cpus: CPU[] }) => (
+	<>
+		{cpus.map((cpu, i) => (
+			<span key={cpu.name} className={colorDiff(cpu.cores.total, cpus[1 - i].cores.total)}>
+				{cpu.cores.performance !== null && cpu.cores.efficient !== null ? (
+					<>
+						{cpu.cores.performance ?? 0}P / {cpu.cores.efficient ?? 0}E
+					</>
+				) : (
+					cpu.cores.total ?? "Unknown"
+				)}
+			</span>
+		))}
+	</>
+);
+
+const Graphics = ({ cpus }: { cpus: CPU[] }) => {
+	const isComparable = cpus[0].graphics !== false && cpus[1].graphics !== false
 
 	return (
 		<>
-			<tr>
-				<td>Base clock</td>
-				{cpus.map((cpu, i) =>
-					cpu.graphics !== false ? (
-						<td
-							key={cpu.name}
-							className={colorDiff(
-								(cpus[0].graphics as Graphics)?.baseFrequency,
-								(cpus[1].graphics as Graphics)?.baseFrequency,
-								i === 1
-							)}
-						>
-							{formatNumber(cpu.graphics.baseFrequency, "Hz")}
-						</td>
-					) : (
-						<td key={cpu.name} rowSpan={3}>
-							No graphics included
-						</td>
-					)
-				)}
-			</tr>
-			<tr>
-				<td>Boost clock</td>
-				{cpus.map(
-					(cpu, i) =>
-						cpu.graphics !== false && (
-							<td
-								key={cpu.name}
-								className={colorDiff(
-									(cpus[0].graphics as Graphics)?.maxFrequency,
-									(cpus[1].graphics as Graphics)?.maxFrequency,
-									i === 1
-								)}
-							>
-								{formatNumber(cpu.graphics.maxFrequency, "Hz")}
-							</td>
-						)
-				)}
-			</tr>
-			<tr>
-				<td>Max displays</td>
-				{cpus.map(
-					(cpu, i) =>
-						cpu.graphics !== false && (
-							<td
-								key={cpu.name}
-								className={colorDiff(
-									(cpus[0].graphics as Graphics)?.displays,
-									(cpus[1].graphics as Graphics)?.displays,
-									i === 1
-								)}
-							>
-								{cpu.graphics.displays || "Unknown"}
-							</td>
-						)
-				)}
-			</tr>
+			{cpus.map((cpu, i) => {
+				if (cpu.graphics === false) return <span key={cpu.name}>No graphics included</span>;
+
+				if (!isComparable)
+					return (
+						<Fragment key={cpu.name}>
+							<span>{cpu.graphics.baseFrequency}</span>
+							<br />
+							<span>{cpu.graphics.maxFrequency}</span>
+							<span>{cpu.graphics.displays}</span>
+						</Fragment>
+					);
+
+				return (
+					<Fragment key={cpu.name}>
+						<span className={colorDiff(cpu.graphics.baseFrequency, cpus[1 - i].graphics?.baseFrequency)}>
+							{cpu.graphics.baseFrequency}
+						</span>
+						<br />
+						<span className={colorDiff(cpu.graphics.maxFrequency, cpus[1 - i].graphics?.maxFrequency)}>
+							{cpu.graphics.maxFrequency}
+						</span>
+						<span className={colorDiff(cpu.graphics.displays, cpus[1 - i].graphics?.displays)}>{cpu.graphics.displays}</span>
+					</Fragment>
+				);
+			})}
 		</>
 	);
+};
+
+const TableStructure: Table<CPU[]> = {
+	General: {
+		launchDate: {
+			title: "Launch Date",
+			path: "launchDate",
+			type: "string",
+		},
+		market: {
+			title: "Market",
+			path: "marketSegment",
+			type: "string",
+			capitalize: true,
+		},
+		lithography: {
+			title: "Lithography",
+			path: "lithography",
+			type: "string",
+		},
+		msrp: {
+			title: "Price",
+			path: "MSRP",
+			type: "number",
+			unit: "$",
+			tooltip: "Manufacturer's suggested retail price. For AMDs may not be as accurate, if even available.",
+			reverse: true,
+		},
+		cache: {
+			title: "Cache",
+			path: "cache",
+			type: "number",
+			unit: "B",
+			tooltip: "Amount of L3 cache. (Intel provides only L3 cache)",
+		},
+	},
+	"CPU specifications": {
+		baseFrequency: {
+			hideOnUndefined: true,
+			title: "Base Frequency",
+			path: "baseFrequency",
+			type: "number",
+			unit: "Hz",
+		},
+		maxFrequency: {
+			title: "Max Frequency",
+			path: "maxFrequency",
+			type: "number",
+			unit: "Hz",
+		},
+		cores: {
+			title: "Cores",
+			type: "component",
+			component: Cores,
+			tooltip: "Displays total amount of cores. For some Intel cpus, it also displays the amount of performance and efficient cores.",
+		},
+		threads: {
+			title: "Threads",
+			path: "threads",
+			type: "number",
+			unit: "",
+		},
+		tdp: {
+			title: "TDP",
+			path: "tdp",
+			type: "number",
+			unit: "W",
+			reverse: true,
+		},
+	},
+	"Memory specifications": {
+		memory: {
+			title: "Memory",
+			type: "component",
+			component: Memory,
+		},
+		capacity: {
+			title: "Max Capacity",
+			path: "memory.maxSize",
+			type: "number",
+			unit: "B",
+		},
+	},
+	Other: {
+		scrapedAt: {
+			title: "Data from",
+			path: "scrapedAt",
+			type: "date",
+		},
+	},
 };
 
 export default Comparison;

@@ -149,6 +149,12 @@ const TableStructure: Table<CPU> = {
 			component: Cores,
 			tooltip: "Displays total amount of cores. For some Intel cpus, it also displays the amount of performance and efficient cores.",
 		},
+		threads: {
+			title: "Threads",
+			path: "threads",
+			type: "number",
+			unit: "",
+		},
 		tdp: {
 			title: "TDP",
 			path: "tdp",

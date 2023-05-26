@@ -3,6 +3,7 @@ import type { JSX } from "react";
 import { Fragment } from "react";
 import Tooltip from "../components/tooltip";
 import { capitalize, colorDiff, formatNumber } from "./formatting";
+import Link from "next/link";
 
 const DateFormat = new Intl.DateTimeFormat("en-US", {
 	year: "numeric",
@@ -102,25 +103,53 @@ export const RenderTwoColumnTable = ({ cpus, list }: { cpus: [CPU, CPU]; list: T
 	<Fragment>
 		{Object.keys(list).map((key, i) => (
 			<div key={key}>
-				<h2 className={`relative -left-2 md:-left-4 ${i === 0 ? "mt-2" : "mt-4"} mb-0.5 border-b px-2 text-3xl font-light`}>
+				<h2
+					className={`relative -left-2 md:-left-4 ${
+						i === 0 ? "mt-2 grid grid-cols-3 " : "mt-4"
+					} mb-0.5 border-b px-2 text-3xl font-light`}
+				>
 					{key}
+					{i === 0 && (
+						<>
+							<Link
+								className="self-center text-center text-2xl font-medium underline decoration-dotted"
+								href={cpus[0].ref}
+								target="_blank"
+							>
+								{cpus[0].name}
+							</Link>
+							<Link
+								className="self-center text-center text-2xl font-medium underline decoration-dotted"
+								href={cpus[1].ref}
+								target="_blank"
+							>
+								{cpus[1].name}
+							</Link>
+						</>
+					)}
 				</h2>
 				{Object.keys(list[key]).map((row) => {
 					const currentRow = list[key][row];
 					const tip = currentRow.tooltip !== undefined && <Tooltip tip={currentRow.tooltip} />;
 
+					if (currentRow.type === "component") {
+						return (
+							<div key={row} className="grid grid-cols-3 pb-1 text-left">
+								<span className="flex h-fit items-center gap-1">
+									{currentRow.title}
+									{tip}
+								</span>
+								{currentRow.component({ cpus })}
+							</div>
+						);
+					}
+
+					const values = cpus.map((cpu) => traversePath(currentRow.path, cpu));
+
+					if (values.every((v) => v !== undefined && v !== null) && currentRow.hideOnUndefined === true)
+						return <Fragment key={row} />;
+
 					switch (currentRow.type) {
-						case "component": {
-							return (
-								<div key={row} className="grid grid-cols-3 pb-1 text-left">
-									<span className="flex h-fit items-center gap-1">
-										{currentRow.title}
-										{tip}
-									</span>
-									{currentRow.component({ cpu: cpus })}
-								</div>
-							);
-						}
 						case "number": {
 							const firstNum = traversePath(currentRow.path, cpus[0]);
 							const secondNum = traversePath(currentRow.path, cpus[1]);
@@ -130,8 +159,12 @@ export const RenderTwoColumnTable = ({ cpus, list }: { cpus: [CPU, CPU]; list: T
 										{currentRow.title}
 										{tip}
 									</span>
-									<span className={colorDiff(firstNum, secondNum)}>{formatNumber(firstNum, currentRow.unit)}</span>
-									<span className={colorDiff(secondNum, firstNum)}>{formatNumber(secondNum, currentRow.unit)}</span>
+									<span className={colorDiff(firstNum, secondNum, currentRow.reverse)}>
+										{formatNumber(firstNum, currentRow.unit)}
+									</span>
+									<span className={colorDiff(secondNum, firstNum, currentRow.reverse)}>
+										{formatNumber(secondNum, currentRow.unit)}
+									</span>
 								</div>
 							);
 						}
@@ -150,6 +183,21 @@ export const RenderTwoColumnTable = ({ cpus, list }: { cpus: [CPU, CPU]; list: T
 								</div>
 							);
 						}
+						case "date": {
+							const firstDate = traversePath(currentRow.path, cpus[0]);
+							const secondDate = traversePath(currentRow.path, cpus[1]);
+
+							return (
+								<div key={row} className="grid grid-cols-3 text-left">
+									<span className="flex items-center gap-1">
+										{currentRow.title}
+										{tip}
+									</span>
+									<span>{DateFormat.format(new Date(firstDate))}</span>
+									<span>{DateFormat.format(new Date(secondDate))}</span>
+								</div>
+							);
+						}
 					}
 				})}
 			</div>
@@ -160,16 +208,19 @@ export const RenderTwoColumnTable = ({ cpus, list }: { cpus: [CPU, CPU]; list: T
 const traversePath = (path: string, obj: any) => path.split(".").reduce((prev, curr) => prev && prev[curr], obj);
 
 export type Table<T extends CPU | CPU[]> = {
-	[key: string]: Record<string, Row<T>>;
+	[key: string]: Record<string, Row<T>>
 };
+
+type Component<T> = T extends CPU ? ({ cpu }: { cpu: CPU }) => JSX.Element : ({ cpus }: { cpus: CPU[] }) => JSX.Element;
 
 type Row<T extends CPU | CPU[]> = {
 	title: string;
 	hideOnUndefined?: true;
 	tooltip?: string;
+	onUndefined?: string;
 } & ( // Prefix is whether is to add K, M, G, etc. to the number
-	| { type: "number"; unit: string; prefix?: boolean; path: path }
-	| { type: "component"; component: ({ cpu }: { cpu: T }) => JSX.Element }
+	| { type: "number"; unit: string; prefix?: boolean; path: path; reverse?: T extends CPU[] ? boolean : never }
+	| { type: "component"; component: Component<T> }
 	| { type: "string"; capitalize?: true; path: path }
 	| { type: "date"; path: path }
 );
