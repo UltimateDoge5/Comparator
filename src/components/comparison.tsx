@@ -1,13 +1,13 @@
 "use client";
 import { Fragment, useEffect, useState } from "react";
-import type { CPU } from "../../CPU";
+import type { CPU, Graphics } from "../../CPU";
 import type { Selection } from "./selector";
 import Selector from "./selector";
 import { Transition } from "@headlessui/react";
 import { ToastContainer } from "react-toastify";
 import type { Table } from "../util/renderers";
 import { RenderTwoColumnTable } from "../util/renderers";
-import { colorDiff } from "../util/formatting";
+import { colorDiff, formatNumber } from "../util/formatting";
 
 const Comparison = ({ models }: { models: Selection[] }) => {
 	const [cpus, setCpus] = useState<(CPU | null)[]>([null, null]);
@@ -23,7 +23,7 @@ const Comparison = ({ models }: { models: Selection[] }) => {
 
 		const url = new URL(window.location.href);
 		url.pathname = modelNames.join("&");
-		window.history.replaceState({}, "", url.href);
+		window.history.pushState({}, "", url.href);
 	}, [modelNames]);
 
 	return (
@@ -96,7 +96,7 @@ const Memory = ({ cpus }: { cpus: CPU[] }) => {
 	return (
 		<>
 			{cpus.map((cpu, i) => (
-				<td key={cpu.name}>
+				<div key={cpu.name}>
 					{memorySpeeds.map(({ type, a, b }) => (
 						<Fragment key={type}>
 							<span className={i % 2 ? colorDiff(b, a) : colorDiff(a, b)}>
@@ -115,7 +115,7 @@ const Memory = ({ cpus }: { cpus: CPU[] }) => {
 								<br />
 							</Fragment>
 						))}
-				</td>
+				</div>
 			))}
 		</>
 	);
@@ -136,41 +136,6 @@ const Cores = ({ cpus }: { cpus: CPU[] }) => (
 		))}
 	</>
 );
-
-const Graphics = ({ cpus }: { cpus: CPU[] }) => {
-	const isComparable = cpus[0].graphics !== false && cpus[1].graphics !== false
-
-	return (
-		<>
-			{cpus.map((cpu, i) => {
-				if (cpu.graphics === false) return <span key={cpu.name}>No graphics included</span>;
-
-				if (!isComparable)
-					return (
-						<Fragment key={cpu.name}>
-							<span>{cpu.graphics.baseFrequency}</span>
-							<br />
-							<span>{cpu.graphics.maxFrequency}</span>
-							<span>{cpu.graphics.displays}</span>
-						</Fragment>
-					);
-
-				return (
-					<Fragment key={cpu.name}>
-						<span className={colorDiff(cpu.graphics.baseFrequency, cpus[1 - i].graphics?.baseFrequency)}>
-							{cpu.graphics.baseFrequency}
-						</span>
-						<br />
-						<span className={colorDiff(cpu.graphics.maxFrequency, cpus[1 - i].graphics?.maxFrequency)}>
-							{cpu.graphics.maxFrequency}
-						</span>
-						<span className={colorDiff(cpu.graphics.displays, cpus[1 - i].graphics?.displays)}>{cpu.graphics.displays}</span>
-					</Fragment>
-				);
-			})}
-		</>
-	);
-};
 
 const TableStructure: Table<CPU[]> = {
 	General: {
@@ -251,6 +216,69 @@ const TableStructure: Table<CPU[]> = {
 			path: "memory.maxSize",
 			type: "number",
 			unit: "B",
+		},
+	},
+	"Graphics specifications": {
+		baseFrequency: {
+			title: "Base Frequency",
+			type: "component",
+			component: ({ cpus }) => {
+				return (
+					<>
+						{cpus.map((cpu, i) => {
+							if (cpu.graphics === false)
+								return (
+									<span className="row-span-3 self-center text-xl" key={cpu.name}>
+										No graphics included
+									</span>
+								);
+							const otherGraphics = cpus[1 - i].graphics as Graphics;
+
+							return (
+								<span key={cpu.name} className={colorDiff(cpu.graphics.baseFrequency, otherGraphics.baseFrequency)}>
+									{formatNumber(cpu.graphics.baseFrequency, "Hz")}
+								</span>
+							);
+						})}
+					</>
+				);
+			},
+		},
+		maxFrequency: {
+			title: "Max Frequency",
+			type: "component",
+			component: ({ cpus }) => (
+				<>
+					{cpus.map((cpu, i) => {
+						if (cpu.graphics === false) return <></>;
+						const otherGraphics = cpus[1 - i].graphics as Graphics;
+
+						return (
+							<span key={cpu.name} className={colorDiff(cpu.graphics.maxFrequency, otherGraphics.maxFrequency)}>
+								{formatNumber(cpu.graphics.maxFrequency, "Hz")}
+							</span>
+						);
+					})}
+				</>
+			),
+		},
+		displays: {
+			title: "Displays",
+			type: "component",
+			component: ({ cpus }) => (
+				<>
+					{cpus.map((cpu, i) => {
+						if (cpu.graphics === false) return <></>;
+						const otherGraphics = cpus[1 - i].graphics as Graphics;
+
+						return (
+							<span key={cpu.name} className={colorDiff(cpu.graphics.displays, otherGraphics.displays)}>
+								{cpu.graphics.displays}
+							</span>
+						);
+					})}
+				</>
+			),
 		},
 	},
 	Other: {
