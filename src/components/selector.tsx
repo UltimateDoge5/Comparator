@@ -7,7 +7,7 @@ import { ReloadIcon } from "./icons";
 import { domAnimation, LazyMotion, m, useTime, useTransform } from "framer-motion";
 import { toast } from "react-toastify";
 
-const Selector = ({ setCPU, urlId, initialSelection }: SelectorProps) => {
+const Selector = ({ setCPU, setModelName, initialSelection }: SelectorProps) => {
 	const [selection, setSelection] = useReducer((prev: Selection, next: Partial<Selection>) => ({ ...prev, ...next }), initialSelection);
 
 	const [tempModel, setTempModel] = useState(initialSelection.model);
@@ -58,10 +58,7 @@ const Selector = ({ setCPU, urlId, initialSelection }: SelectorProps) => {
 				}
 
 				// Update the URL after successful fetch
-				const url = new URL(window.location.href);
-				url.searchParams.set(urlId, `${selection.manufacturer}-${selection.model.toLowerCase()}`);
-				window.history.pushState({}, "", url.toString());
-
+				setModelName(`${selection.manufacturer}-${selection.model.toLowerCase()}`);
 				setSelection({ state: "success" });
 				setCPU(cpu.data);
 			});
@@ -151,6 +148,7 @@ const Selector = ({ setCPU, urlId, initialSelection }: SelectorProps) => {
 						if (tempModel !== selection.model && !showResults) setShowResults(true);
 
 						if (e.key === "Enter") {
+							if (tempModel === selection.model) return;
 							setShowResults(false);
 							setSelection({ model: tempModel, state: "loading" });
 						}
@@ -220,7 +218,7 @@ const previewPositions = ["", "-left-1/4", "-left-1/2"];
 const getMarkings = (state: Selection["state"]) => {
 	switch (state) {
 		case "loading":
-			return "bg-yellow-400/10 border-yellow-500 hover:border-yellow-400";
+			return "bg-yellow-400/10 border-yellow-500 hover:border-yellow-400 pulse";
 		case "error":
 			return "bg-red-400/10 border-red-500 hover:border-red-400";
 		case "success":
@@ -232,7 +230,7 @@ const getMarkings = (state: Selection["state"]) => {
 
 interface SelectorProps {
 	setCPU: (cpu: CPU | null) => void;
-	urlId: string;
+	setModelName: (name: string) => void;
 	initialSelection: Selection;
 }
 

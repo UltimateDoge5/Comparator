@@ -3,7 +3,6 @@ const Footer = () => (
 		<p className="text-white">
 			Made by
 			<a className="text-blue-500" href="https://pkozak.org" target="_blank">
-				{" "}
 				Piotr Kozak
 			</a>
 		</p>
@@ -11,8 +10,7 @@ const Footer = () => (
 		<p className="text-white">
 			Source code available on
 			<a className="text-blue-500" href="https://github.com/UltimateDoge5/Comparator" target="_blank" rel="noreferrer">
-				{" "}
-				GitHub{" "}
+				GitHub
 			</a>
 		</p>
 		<iframe

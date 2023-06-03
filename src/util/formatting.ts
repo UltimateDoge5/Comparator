@@ -45,22 +45,10 @@ export const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.sli
 
 // Make the names look nice
 export const beautifyNames = (name: string) => {
-	const split = name.replace("amd", "AMD").split(" "); // AMD is an exception
-	let result = "";
-	for (let i = 0; i < split.length; i++) {
-		const word = split[i];
-		if (word[0] === "i") {
-			result += word;
-			continue;
-		}
-
-		if (word.length > 1) {
-			result += word[0].toUpperCase() + word.slice(1) + " ";
-		} else {
-			result += word.toUpperCase() + " ";
-		}
-	}
-	return result.trim();
+	name = name.replace("amd", "AMD")
+	name = name.replace(/([a-z])([A-Z])/g, "$1 $2");
+	name = name.replace(/([A-Z])([A-Z][a-z])/g, "$1 $2");
+	return capitalize(name);
 };
 
 // Split the string on the first appearance of the separator
