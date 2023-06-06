@@ -1,11 +1,12 @@
 import { Fragment } from "react";
 import type { CPU } from "../../../../CPU";
 import type { Metadata } from "next";
-import { fetchCPUEdge } from "../../../util/fetchCPU";
+import { fetchCPUEdge } from "@/util/fetchCPU";
 import { Redis } from "@upstash/redis";
 import { openGraph, twitter } from "../../shared-metadata";
 import Refetch from "../../../components/refetch";
-import { RenderTable, Table } from "../../../util/renderers";
+import type { Table } from "@/util/renderers";
+import { RenderTable } from "@/util/renderers";
 
 const redis = Redis.fromEnv();
 export const runtime = "edge";
@@ -52,10 +53,10 @@ const Page = async ({ searchParams }: { searchParams: { cpu: string; refetch: st
 	return (
 		<>
 			<main className="text-white">
-				<div className="my-4 flex justify-center gap-4">
+				<header className="my-4 flex justify-center gap-4">
 					<h1 className="text-3xl">{cpu.name}</h1>
 					<Refetch modelPath={searchParams.cpu} />
-				</div>
+				</header>
 				<div className="mx-auto w-full border-0 border-gray-200/50 bg-white/20 p-4 text-lg md:mb-12 md:w-3/5 md:rounded-md md:border md:p-6">
 					<RenderTable cpu={cpu} list={TableStructure} />
 				</div>

@@ -27,9 +27,7 @@ export async function GET(req: Request, { params }: { params: { cpu: string } })
 				}}
 			>
 				<LogoIconBlack style={{ width: "1026px", height: "250px" }} />
-				<h1 tw="text-center text-5xl">
-					{data.name}
-				</h1>
+				<h1 tw="text-center text-5xl">{data.name}</h1>
 			</div>
 		),
 		{

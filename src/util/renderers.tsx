@@ -23,7 +23,7 @@ export const RenderTable = ({ cpu, list }: { cpu: CPU; list: Table<CPU> }) => (
 			// If there is no graphics, don't show the GPU specifications
 			.filter((key) => !(cpu.graphics === false && key === "GPU specifications"))
 			.map((key, i) => (
-				<div key={key}>
+				<section key={key}>
 					<h2
 						className={`relative -left-2 md:-left-4 ${i === 0 ? "mt-2" : "mt-4"} mb-1 border-b
 						${cpu.manufacturer === "intel" ? "border-blue-500" : "border-red-500"}
@@ -88,7 +88,7 @@ export const RenderTable = ({ cpu, list }: { cpu: CPU; list: Table<CPU> }) => (
 								);
 						}
 					})}
-				</div>
+				</section>
 			))}
 	</Fragment>
 );
@@ -102,8 +102,8 @@ export const RenderTable = ({ cpu, list }: { cpu: CPU; list: Table<CPU> }) => (
 export const RenderTwoColumnTable = ({ cpus, list }: { cpus: [CPU, CPU]; list: Table<CPU[]> }) => (
 	<Fragment>
 		{Object.keys(list).map((key, i) => (
-			<div key={key} className="grid grid-cols-3">
-				<h2
+			<section key={key} className="grid grid-cols-3">
+				<h3
 					className={`relative -left-2 md:-left-4 ${
 						i === 0 ? "mt-2 grid grid-cols-3 " : "mt-4"
 					} col-span-3 mb-0.5 border-b px-2 text-3xl font-light`}
@@ -127,7 +127,7 @@ export const RenderTwoColumnTable = ({ cpus, list }: { cpus: [CPU, CPU]; list: T
 							</Link>
 						</>
 					)}
-				</h2>
+				</h3>
 				{Object.keys(list[key]).map((row) => {
 					const currentRow = list[key][row];
 					const tip = currentRow.tooltip !== undefined && <Tooltip tip={currentRow.tooltip} />;
@@ -152,7 +152,7 @@ export const RenderTwoColumnTable = ({ cpus, list }: { cpus: [CPU, CPU]; list: T
 						case "number": {
 							const firstNum = traversePath(currentRow.path, cpus[0]);
 							const secondNum = traversePath(currentRow.path, cpus[1]);
-							
+
 							return (
 								<Fragment key={row}>
 									<span className="flex items-center gap-1">
@@ -200,10 +200,14 @@ export const RenderTwoColumnTable = ({ cpus, list }: { cpus: [CPU, CPU]; list: T
 						}
 					}
 				})}
-			</div>
+			</section>
 		))}
 	</Fragment>
 );
+
+// export const RenderMultiColumnTable = ({ cpus, list }: { cpus: CPU[]; list: Table<CPU> }) => (
+// 	<Fragment>
+//
 
 const traversePath = (path: string, obj: any) => path.split(".").reduce((prev, curr) => prev && prev[curr], obj);
 

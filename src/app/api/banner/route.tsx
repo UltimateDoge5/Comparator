@@ -1,5 +1,4 @@
 import { ImageResponse } from "@vercel/og";
-import { beautifyNames, splitFirst } from "../../../util/formatting";
 import { LogoIconBlack } from "../../../components/icons";
 
 export const runtime = "edge";
