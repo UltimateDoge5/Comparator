@@ -9,7 +9,7 @@ let $: CheerioAPI;
 
 const scrapeIntel = async (redis: Redis, model: string, noCache: boolean) =>
 	new Promise<CPU>(async (resolve, reject) => {
-		let cpu: CPU | null = !noCache ? (await redis.json.get(`intel-${model.replace(/ /g, "-")}`, "$"))?.[0] : null;
+		let cpu: CPU | null = !noCache ? (await redis.json.get(`intel-${model.replace(/ /g, "-")}`, "$"))?.[0] as CPU | null : null;
 		if (cpu !== null && cpu?.schemaVer === parseFloat(process.env.MIN_SCHEMA_VERSION)) return resolve(cpu);
 
 		const token = (await redis.get<string>("intel-token")) ?? (await refreshToken(redis));
@@ -19,7 +19,7 @@ const scrapeIntel = async (redis: Redis, model: string, noCache: boolean) =>
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
-				Authorization: ("Bearer " + token) as string,
+				Authorization: "Bearer " + token,
 			},
 			body: JSON.stringify({
 				q: model,
@@ -47,7 +47,7 @@ const scrapeIntel = async (redis: Redis, model: string, noCache: boolean) =>
 			return reject({ code: 500, message: "Error while fetching the CPU data" });
 		}
 
-		const data = await query.json();
+		const data = (await query.json()) as { results: { uri: string }[] };
 		let url = data?.results[0]?.uri;
 
 		if (!url) return reject({ code: 404, message: "CPU not found" });
@@ -62,8 +62,10 @@ const scrapeIntel = async (redis: Redis, model: string, noCache: boolean) =>
 
 		// Sometimes the search url is from a different language
 		if (!url.includes("us/en")) url = url.replace(/www(\/\w{2}\/)(\w{2})/g, "www/us/en");
+		// Sometimes the url doesn't end with .html
+		if (!url.endsWith(".html")) url += ".html";
 
-		if (process.env.NODE_ENV === "development") console.log("Fetching page: ", url);
+		if (process.env.NODE_ENV !== "production") console.log("Fetching page: ", url);
 
 		// Get the data
 		const page = await fetch(url);
@@ -83,7 +85,6 @@ const scrapeIntel = async (redis: Redis, model: string, noCache: boolean) =>
 		cpu = {
 			name: cpuName,
 			manufacturer: "intel",
-			// MSRP: parseFloat((getParameter("Recommended Customer Price") ?? "null").replace("$", "")),
 			MSRP: getPrice(getParameter("Recommended Customer Price")),
 			marketSegment: normaliseMarket(getParameter("Vertical Segment")),
 			lithography: getParameter("Lithography"),
@@ -94,10 +95,10 @@ const scrapeIntel = async (redis: Redis, model: string, noCache: boolean) =>
 				performance: getFloatParameter("# of Performance-cores"),
 			},
 			threads: getFloatParameter("Total Threads"),
-			baseFrequency: getFloatParameter("Processor Base Frequency") || getFloatParameter("Performance-core Base Frequency"),
+			baseFrequency: getFloatParameter("Processor Base Frequency") ?? getFloatParameter("Performance-core Base Frequency"),
 			maxFrequency: getFloatParameter("Max Turbo Frequency"),
-			tdp: getFloatParameter("Configurable TDP-up") || getFloatParameter("TDP") || getFloatParameter("Maximum Turbo Power"),
-			launchDate: getParameter("Launch Date") as string,
+			tdp: getFloatParameter("Configurable TDP-up") ?? getFloatParameter("TDP") ?? getFloatParameter("Maximum Turbo Power"),
+			launchDate: getParameter("Launch Date")!,
 			memory: {
 				types: getMemoryDetails(),
 				maxSize: getFloatParameter("Max Memory Size"),
@@ -173,14 +174,14 @@ const getMemoryDetails = (): Memory["types"] => {
 		.map((mem) => {
 			const [type, speed] = mem.trim().split("-");
 
-			return { type: type, speed: parseInt(speed.split("/").pop() as string) };
+			return { type: type, speed: parseInt(speed.split("/").pop()!) };
 		})
 		.filter((mem) => mem?.speed !== null || mem !== null);
 };
 
 const getPrice = (s: string | null): number | null => {
 	if (s === null) return s;
-	s = (s.split("-").pop() as string).replace("$", "");
+	s = s.split("-").pop()!.replace("$", "");
 	return parseFloat(s);
 };
 
@@ -192,7 +193,7 @@ export const refreshToken = async (redis: Redis) => {
 		return;
 	}
 
-	const data = await token.json();
+	const data = (await token.json()) as { token: string };
 	await redis.set("intel-token", data.token);
 	return data.token;
 };

@@ -1,19 +1,25 @@
 {
   "parser": "@typescript-eslint/parser",
   "parserOptions": {
-    "project": "./tsconfig.json"
+    "project": true
   },
   "plugins": [
     "@typescript-eslint",
     "tailwindcss"
   ],
   "extends": [
-    "next/core-web-vitals",
-    "plugin:@typescript-eslint/recommended",
-    "plugin:tailwindcss/recommended"
+    "eslint:recommended",
+    "plugin:@typescript-eslint/recommended-type-checked",
+    "plugin:@typescript-eslint/stylistic-type-checked",
+    "plugin:@next/next/recommended"
   ],
   "rules": {
-    "@typescript-eslint/consistent-type-imports": "warn"
+    "@typescript-eslint/consistent-type-imports": "warn",
+    "@next/next/no-html-link-for-pages": "off"
   },
-  "ignorePatterns": ["node_modules", ".next","*.js"]
+  "ignorePatterns": [
+    "node_modules",
+    ".next",
+    "*.js"
+  ]
 }

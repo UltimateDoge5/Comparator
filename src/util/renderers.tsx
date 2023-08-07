@@ -61,7 +61,9 @@ export const RenderTable = ({ cpu, list }: { cpu: CPU; list: Table<CPU> }) => (
 											{currentRow.tooltip !== undefined && <Tooltip tip={currentRow.tooltip} />}
 										</span>
 										<span>
-											{currentRow.prefix !== false ? formatNumber(value, currentRow.unit) : value + currentRow.unit}
+											{currentRow.prefix !== false
+												? formatNumber(value as number, currentRow.unit)
+												: value + currentRow.unit}
 										</span>
 									</div>
 								);
@@ -72,7 +74,7 @@ export const RenderTable = ({ cpu, list }: { cpu: CPU; list: Table<CPU> }) => (
 											{currentRow.title}
 											{currentRow.tooltip !== undefined && <Tooltip tip={currentRow.tooltip} />}
 										</span>
-										<span>{currentRow.capitalize === true ? capitalize(value) : value}</span>
+										<span>{currentRow.capitalize === true ? capitalize(value as string) : value}</span>
 									</div>
 								);
 
@@ -150,8 +152,8 @@ export const RenderTwoColumnTable = ({ cpus, list }: { cpus: [CPU, CPU]; list: T
 
 					switch (currentRow.type) {
 						case "number": {
-							const firstNum = traversePath(currentRow.path, cpus[0]);
-							const secondNum = traversePath(currentRow.path, cpus[1]);
+							const firstNum = traversePath(currentRow.path, cpus[0]) as number | null;
+							const secondNum = traversePath(currentRow.path, cpus[1]) as number | null;
 
 							return (
 								<Fragment key={row}>
@@ -169,8 +171,8 @@ export const RenderTwoColumnTable = ({ cpus, list }: { cpus: [CPU, CPU]; list: T
 							);
 						}
 						case "string": {
-							const firstStr = traversePath(currentRow.path, cpus[0]);
-							const secondStr = traversePath(currentRow.path, cpus[1]);
+							const firstStr = traversePath(currentRow.path, cpus[0]) as string;
+							const secondStr = traversePath(currentRow.path, cpus[1]) as string;
 
 							return (
 								<Fragment key={row}>
@@ -209,14 +211,12 @@ export const RenderTwoColumnTable = ({ cpus, list }: { cpus: [CPU, CPU]; list: T
 // 	<Fragment>
 //
 
-const traversePath = (path: string, obj: any) => path.split(".").reduce((prev, curr) => prev && prev[curr], obj);
+const traversePath = (path: string, obj: any): number | string => path.split(".").reduce((prev, curr) => prev?.[curr], obj);
 
-export type Table<T extends CPU | CPU[]> = {
-	[key: string]: Record<string, Row<T>>;
-};
+export type Table<T extends CPU | CPU[]> = Record<string, Record<string, Row<T>>>;
 
 type Component<T> = T extends CPU ? ({ cpu }: { cpu: CPU }) => JSX.Element : ({ cpus }: { cpus: CPU[] }) => JSX.Element;
-type path = string | keyof CPU;
+type path = keyof CPU | string;
 
 type Row<T extends CPU | CPU[]> = {
 	title: string;

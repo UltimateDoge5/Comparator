@@ -49,7 +49,18 @@ export async function generateMetadata({ searchParams }: { searchParams: { cpu: 
 }
 
 const Page = async ({ searchParams }: { searchParams: { cpu: string; refetch: string } }) => {
-	const cpu = await fetchCPUEdge(redis, searchParams.cpu, searchParams.refetch == "true");
+	let cpu = await fetchCPUEdge(redis, searchParams.cpu, searchParams.refetch == "true");
+
+	// Check cpu for null values if there are too many above a certain threshold, refetch
+	let nulls = 0
+	for (const key in cpu) {
+		if (cpu[key as keyof typeof cpu ] === null) nulls++
+	}
+
+	if (nulls >= 6) {
+		cpu = await fetchCPUEdge(redis, searchParams.cpu, true);
+	}
+
 	return (
 		<>
 			<main className="text-white">
@@ -217,6 +228,5 @@ const TableStructure: Table<CPU> = {
 		},
 	},
 };
-
 
 export default Page;
