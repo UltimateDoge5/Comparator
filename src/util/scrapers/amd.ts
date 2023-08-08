@@ -5,95 +5,97 @@ import { AMD_PRICES, AMD_PRODUCTS } from "../products";
 import { normaliseMarket } from "../formatting";
 import elementSelector from "../selectors";
 import type { Redis } from "@upstash/redis";
+import { reject, resolve, type ScrapeResult } from "./result";
 
 let $: CheerioAPI;
 
-const scrapeAMD = async (redis: Redis, model: string, noCache: boolean) =>
-	new Promise<CPU>(async (resolve, reject) => {
-		let cpu: CPU | null = !noCache ? (await redis.json.get(model.replace(/ /g, "-"), "$"))?.[0] : null;
-		if (cpu !== null && cpu?.schemaVer === parseFloat(process.env.MIN_SCHEMA_VERSION)) return resolve(cpu);
+const scrapeAMD = async (redis: Redis, model: string, noCache: boolean): Promise<ScrapeResult> => {
+	if (!noCache) {
+		const cache = (await redis.json.get(`intel-${model.replace(/ /g, "-")}`, "$")) as [CPU] | null;
+		const cpu = cache?.[0];
+		if (cpu !== undefined && cpu?.schemaVer === parseFloat(process.env.MIN_SCHEMA_VERSION)) return resolve(cpu);
+	}
 
-		const url = AMD_PRODUCTS.find((item) => item.name.replace("™", "").toLowerCase() === model)?.url;
-		if (!url) {
-			console.error("CPU not found:", model);
-			return reject({ message: "CPU not found", code: 404 });
-		}
+	const url = AMD_PRODUCTS.find((item) => item.name.replace("™", "").toLowerCase() === model)?.url;
+	if (!url) {
+		console.error("CPU not found:", model);
+		return reject({ message: "CPU not found", code: 404 });
+	}
 
-		//Get the specs page
-		const specsPage = await fetch(`https://${process.env.BROWSERLESS_URL}/content?token=${process.env.BROWSERLESS_TOKEN}`, {
-			method: "POST",
-			body: JSON.stringify({
-				url: url,
-				userAgent:
-					"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.125 Safari/537.36",
-				gotoOptions: {
-					waitUntil: "domcontentloaded",
-				},
-			}),
-			headers: {
-				"Content-Type": "application/json",
+	//Get the specs' page
+	const specsPage = await fetch(`https://${process.env.BROWSERLESS_URL}/content?token=${process.env.BROWSERLESS_TOKEN}`, {
+		method: "POST",
+		body: JSON.stringify({
+			url: url,
+			userAgent:
+				"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.125 Safari/537.36",
+			gotoOptions: {
+				waitUntil: "domcontentloaded",
 			},
-		});
-
-		if (process.env.NODE_ENV === "development") console.log("Fetching page: ", url);
-
-		if (specsPage.status !== 200) {
-			console.error("Error:", specsPage.statusText, specsPage.status);
-			return reject({ message: "Error while fetching the specs page", code: 500 });
-		}
-
-		// This needs to be a global variable, because the getParameter function uses it
-		// eslint-disable-next-line prefer-const
-		$ = load(await specsPage.text());
-
-		// Get the msrp before model name change
-		const msrp = AMD_PRICES[model.replace("amd", "").trim() as keyof typeof AMD_PRICES] || null;
-		model = model.replace(/ /g, "-").toLowerCase();
-		const name = $(".section-title").text().trim();
-
-		cpu = {
-			name,
-			manufacturer: "amd",
-			MSRP: msrp,
-			marketSegment: normaliseMarket(getParameter("Platform")),
-			cores: {
-				total: getFloatParameter("# of CPU Cores"),
-				performance: null,
-				efficient: null,
-			},
-			tdp: getFloatParameter("Default TDP"),
-			threads: getFloatParameter("# of Threads"),
-			baseFrequency: getFloatParameter("Base Clock"),
-			maxFrequency: getFloatParameter("Max. Boost Clock"),
-			lithography: getParameter("Processor Technology for CPU Cores"),
-			cache: getFloatParameter("L3 Cache"),
-			launchDate: getLaunchDate(getParameter("Launch Date") ?? ""),
-			memory: {
-				types: getMemoryDetails(),
-				maxSize: getFloatParameter("Max Memory Size (dependent on memory type)") || getFloatParameter("Max. Memory"),
-			},
-			graphics:
-				getParameter("Integrated Graphics") === "Yes"
-					? {
-							baseFrequency:
-								getFloatParameter("GPU Base") ??
-								getFloatParameter("Graphics Base Frequency") ??
-								getFloatParameter("Graphics Frequency"),
-							maxFrequency: getFloatParameter("Graphics Frequency") ?? getFloatParameter("Graphics Max Dynamic Frequency"),
-							displays: getFloatParameter("Max Displays") ?? getFloatParameter("Max # of Displays Supported"),
-					  }
-					: false,
-			source: url,
-			ref: "/cpu/" + model,
-			scrapedAt: new Date().toString(),
-			schemaVer: parseFloat(process.env.MIN_SCHEMA_VERSION),
-		};
-
-		if (process.env.NODE_ENV !== "test") await redis.json.set(model, "$", cpu as Record<string, any>);
-		resolve(cpu);
+		}),
+		headers: {
+			"Content-Type": "application/json",
+		},
 	});
 
-const getParameter = (name: string) => elementSelector($, ".field__label", name)?.parent().find(".field__item").text().trim() || null;
+	if (process.env.NODE_ENV === "development") console.log("Fetching page: ", url);
+
+	if (specsPage.status !== 200) {
+		console.error("Error:", specsPage.statusText, specsPage.status);
+		return reject({ message: "Error while fetching the specs page", code: 500 });
+	}
+
+	// This needs to be a global variable, because the getParameter function uses it
+	$ = load(await specsPage.text());
+
+	// Get the msrp before model name change
+	const msrp = AMD_PRICES[model.replace("amd", "").trim() as keyof typeof AMD_PRICES] || null;
+	model = model.replace(/ /g, "-").toLowerCase();
+	const name = $(".section-title").text().trim();
+
+	const cpu: CPU = {
+		name,
+		manufacturer: "amd",
+		MSRP: msrp,
+		marketSegment: normaliseMarket(getParameter("Platform")),
+		cores: {
+			total: getFloatParameter("# of CPU Cores"),
+			performance: null,
+			efficient: null,
+		},
+		tdp: getFloatParameter("Default TDP"),
+		threads: getFloatParameter("# of Threads"),
+		baseFrequency: getFloatParameter("Base Clock"),
+		maxFrequency: getFloatParameter("Max. Boost Clock"),
+		lithography: getParameter("Processor Technology for CPU Cores"),
+		cache: getFloatParameter("L3 Cache"),
+		launchDate: getLaunchDate(getParameter("Launch Date") ?? ""),
+		memory: {
+			types: getMemoryDetails(),
+			maxSize: getFloatParameter("Max Memory Size (dependent on memory type)") ?? getFloatParameter("Max. Memory"),
+		},
+		graphics:
+			getParameter("Integrated Graphics") === "Yes"
+				? {
+						baseFrequency:
+							getFloatParameter("GPU Base") ??
+							getFloatParameter("Graphics Base Frequency") ??
+							getFloatParameter("Graphics Frequency"),
+						maxFrequency: getFloatParameter("Graphics Frequency") ?? getFloatParameter("Graphics Max Dynamic Frequency"),
+						displays: getFloatParameter("Max Displays") ?? getFloatParameter("Max # of Displays Supported"),
+				}
+				: false,
+		source: url,
+		ref: "/cpu/" + model,
+		scrapedAt: new Date().toString(),
+		schemaVer: parseFloat(process.env.MIN_SCHEMA_VERSION),
+	};
+
+	if (process.env.NODE_ENV !== "test") await redis.json.set(model, "$", cpu as unknown as Record<string, unknown>);
+	return resolve(cpu);
+};
+
+const getParameter = (name: string) => elementSelector($, ".field__label", name)?.parent().find(".field__item").text().trim() ?? null;
 
 // AMD doesn't space the values and units, but they set a meta-tag with the value
 const getFloatParameter = (name: string, normalize = true) => {
@@ -106,7 +108,7 @@ const getFloatParameter = (name: string, normalize = true) => {
 
 	// Regex for catching the first letter after the numbers
 	const regex = /(?<=\d)([a-zA-Z])/g;
-	const prefix = item.text().replaceAll(" ", "").match(regex)?.[0] || "base";
+	const prefix = item.text().replaceAll(" ", "").match(regex)?.[0] ?? "base";
 
 	return value * (Prefixes?.[prefix as keyof typeof Prefixes] ?? 1);
 };

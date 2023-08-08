@@ -11,16 +11,13 @@ export async function GET(req: Request) {
 	const noCache = searchParams.get("no-cache") !== null;
 
 	if (!model || model.length < 3) return new Response("Invalid model", { status: 400 });
-
-
+	
 	model = model.trim().toLowerCase();
 	if (!model.startsWith("amd")) model = `amd ${model}`;
 	if (model.includes("-")) model = model.replaceAll("-", " "); // One lonely dash can cause issues
 
-	let error: { code: number; message: string } | undefined;
-	const result = await scrapeAMD(redis,model, noCache).catch((err) => (error = err));
-
-	if (error) return new Response(error.message, { status: error.code });
+	const result = await scrapeAMD(redis,model, noCache)
+	if (result.error) return new Response(result.error.message, { status: result.error.code });
 	return NextResponse.json(result);
 }
 
