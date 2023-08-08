@@ -25,5 +25,5 @@ export async function GET(req: Request) {
 
 	const result = await scrapeIntel(redis,normaliseIntel(model), noCache);
 	if (result.error) return new Response(result.error.message, { status: result.error.code });
-	return NextResponse.json(result);
+	return NextResponse.json(result.cpu);
 }

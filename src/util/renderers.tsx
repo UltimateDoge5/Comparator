@@ -171,8 +171,9 @@ export const RenderTwoColumnTable = ({ cpus, list }: { cpus: [CPU, CPU]; list: T
 							);
 						}
 						case "string": {
-							const firstStr = traversePath(currentRow.path, cpus[0]) as string;
-							const secondStr = traversePath(currentRow.path, cpus[1]) as string;
+							const firstStr = traversePath(currentRow.path, cpus[0]) as string ;
+							const secondStr = traversePath(currentRow.path, cpus[1]) as string ;
+							console.log(currentRow.path, firstStr, secondStr);
 
 							return (
 								<Fragment key={row}>
@@ -214,7 +215,6 @@ const traversePath = (path: string, obj:any): number | string => path.split(".")
 export type Table<T extends CPU | CPU[]> = Record<string, Record<string, Row<T>>>;
 
 type Component<T> = T extends CPU ? ({ cpu }: { cpu: CPU }) => JSX.Element : ({ cpus }: { cpus: CPU[] }) => JSX.Element;
-type path = keyof CPU;
 
 type Row<T extends CPU | CPU[]> = {
 	title: string;
@@ -222,8 +222,8 @@ type Row<T extends CPU | CPU[]> = {
 	tooltip?: string;
 	onUndefined?: string;
 } & ( // Prefix is whether is to add K, M, G, etc. to the number
-	| { type: "number"; unit: string; prefix?: boolean; path: path; reverse?: T extends CPU[] ? boolean : never }
+	| { type: "number"; unit: string; prefix?: boolean; path: string; reverse?: T extends CPU[] ? boolean : never }
 	| { type: "component"; component: Component<T> }
-	| { type: "string"; capitalize?: true; path: path }
-	| { type: "date"; path: path }
+	| { type: "string"; capitalize?: true; path: string }
+	| { type: "date"; path: string }
 );

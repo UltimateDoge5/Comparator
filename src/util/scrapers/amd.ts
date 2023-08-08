@@ -22,7 +22,7 @@ const scrapeAMD = async (redis: Redis, model: string, noCache: boolean): Promise
 		return reject({ message: "CPU not found", code: 404 });
 	}
 
-	//Get the specs' page
+	//Get the specs page
 	const specsPage = await fetch(`https://${process.env.BROWSERLESS_URL}/content?token=${process.env.BROWSERLESS_TOKEN}`, {
 		method: "POST",
 		body: JSON.stringify({

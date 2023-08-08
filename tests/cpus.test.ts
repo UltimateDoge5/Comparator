@@ -18,6 +18,7 @@ test(
 	{ timeout: 10000 }
 );
 
+// For some reason, this fails only in tests
 test(
 	"Intel cpu - no cache",
 	async () => {
@@ -40,6 +41,7 @@ test(
 	{ timeout: 10000 }
 );
 
+// For some reason, this fails only in tests
 test(
 	"AMD cpu - no cache",
 	async () => {
@@ -55,7 +57,6 @@ const sumNullsInCPU = (cpu: CPU) => {
 	let sum = 0;
 	for (const key in cpu) {
 		if (cpu[key as keyof CPU] == null) {
-			console.log(`Null value at ${key}`);
 			sum += 1;
 		}
 	}
