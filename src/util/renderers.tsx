@@ -207,16 +207,14 @@ export const RenderTwoColumnTable = ({ cpus, list }: { cpus: [CPU, CPU]; list: T
 	</Fragment>
 );
 
-// export const RenderMultiColumnTable = ({ cpus, list }: { cpus: CPU[]; list: Table<CPU> }) => (
-// 	<Fragment>
-//
-
-const traversePath = (path: string, obj: any): number | string => path.split(".").reduce((prev, curr) => prev?.[curr], obj);
+// No need to type this function
+// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access,@typescript-eslint/no-unsafe-return,@typescript-eslint/no-explicit-any
+const traversePath = (path: string, obj:any): number | string => path.split(".").reduce((prev, curr) => prev?.[curr], obj);
 
 export type Table<T extends CPU | CPU[]> = Record<string, Record<string, Row<T>>>;
 
 type Component<T> = T extends CPU ? ({ cpu }: { cpu: CPU }) => JSX.Element : ({ cpus }: { cpus: CPU[] }) => JSX.Element;
-type path = keyof CPU | string;
+type path = keyof CPU;
 
 type Row<T extends CPU | CPU[]> = {
 	title: string;

@@ -9,9 +9,9 @@ export const formatNumber = (num: number | null, unit: string) => {
 	return `${value % 1 !== 0 ? value.toFixed(2) : value} ${prefix}${unit}`;
 };
 
-export const colorDiff = (a: number | null, b: number | null, invert = false) => {
+export const colorDiff = (a: number | null | undefined, b: number | null | undefined, invert = false) => {
 	if (a === b) return "text-gray-50";
-	if (a === null || a === undefined || b === null || b === undefined) return "text-yellow-500";
+	if (typeof a !== "number" || typeof b !== "number") return "text-yellow-500";
 	return (invert ? b > a : a > b) ? "text-green-500" : "text-red-500";
 };
 
@@ -45,7 +45,7 @@ export const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.sli
 
 // Make the names look nice
 export const beautifyNames = (name: string) => {
-	name = name.replace("amd", "AMD")
+	name = name.replace("amd", "AMD");
 	name = name.replace(/([a-z])([A-Z])/g, "$1 $2");
 	name = name.replace(/([A-Z])([A-Z][a-z])/g, "$1 $2");
 	return capitalize(name);

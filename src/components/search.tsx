@@ -4,7 +4,7 @@ import useSWRInfinite from "swr/infinite";
 import type { CPU, Manufacturer } from "../../CPU";
 import useSWR from "swr";
 import Link from "next/link";
-import { capitalize } from "../util/formatting";
+import { capitalize } from "@/util/formatting";
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -16,7 +16,7 @@ const Search = ({ initialQuery }: { initialQuery: string }) => {
 		remainingItems: number;
 	}>((index) => `/api/search?q=${query}&p=${index + 1}`, fetcher);
 
-	const remainingItems = data?.[data.length - 1]?.remainingItems || 0;
+	const remainingItems = data?.[data.length - 1]?.remainingItems ?? 0;
 
 	return (
 		<div className="mb-8 mt-6 flex w-full flex-col items-center gap-6 text-white">
@@ -61,6 +61,8 @@ const Search = ({ initialQuery }: { initialQuery: string }) => {
 };
 
 const CPUItem = ({ model, manufacturer }: { model: string; manufacturer: Manufacturer }) => {
+	// some weird type shit error
+	// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 	const { data, error, isLoading } = useSWR<CPU>(`/api/${manufacturer}?model=${model}`, fetcher, {});
 
 	return (
@@ -70,14 +72,14 @@ const CPUItem = ({ model, manufacturer }: { model: string; manufacturer: Manufac
 			 hover:bg-slate-600/50 md:w-3/4 lg:w-1/2 ${getManufacturerColor(manufacturer)} shadow-md`}
 		>
 			<h1 className="col-span-3 text-lg font-medium md:text-2xl">
-				<Link href={data?.ref || `/cpu/${manufacturer}-${model.toLowerCase()}`}>{model}</Link>
+				<Link href={data?.ref ?? `/cpu/${manufacturer}-${model.toLowerCase()}`}>{model}</Link>
 			</h1>
 
 			<span className={isLoading || error ? "flex h-6 w-24 animate-pulse items-center rounded-md bg-gray-800 text-transparent" : "text-center"}>
-				{capitalize(data?.marketSegment || "Unknown market")}
+				{capitalize(data?.marketSegment ?? "Unknown market")}
 			</span>
 			<span className={isLoading || error ? "flex h-6 w-24 animate-pulse items-center rounded-md bg-gray-800 text-transparent" : "text-center"}>
-				{data?.launchDate || "Date unknown"}
+				{data?.launchDate ?? "Date unknown"}
 			</span>
 			<span className={isLoading || error ? "flex h-6 animate-pulse items-center rounded-md bg-gray-800 text-transparent" : "text-center"}>
 				{data?.MSRP ? `${data.MSRP}$` : "Price unavailable"}

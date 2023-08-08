@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 import { openGraph, twitter } from "../shared-metadata";
-import { beautifyNames, splitFirst } from "../../util/formatting";
+import { beautifyNames, splitFirst } from "@/util/formatting";
 import Comparison from "../../components/comparison";
-import type { Selection } from "../../components/selector";
+import type { Selection } from "@/components/selector";
 
 export const runtime = "edge";
 
 export const generateMetadata = ({ params }: { params: { models: string } }): Metadata => {
-	const models = params.models.split("&").map((s) => splitFirst(decodeURI(s), "-").pop() as string);
+	const models = params.models.split("&").map((s) => splitFirst(decodeURI(s), "-").pop()!);
 
 	let title = "Compare any CPU you want";
 	let description = "PrimeCPU lets you compare CPUs and GPUs in an instant!";
@@ -64,7 +64,7 @@ const getInitialSelections = (params: string): Selection[] => {
 		const [manufacturer, name] = splitFirst(model, "-");
 		// If the manufacturer is not intel or amd, default to intel
 		if (manufacturer !== "intel" && manufacturer !== "amd" ) return { manufacturer: "intel", state: "idle", model: "" } as Selection;
-		return { manufacturer: manufacturer as "intel" | "amd", state: "loading", model: beautifyNames(name) } as Selection;
+		return { manufacturer: manufacturer , state: "loading", model: beautifyNames(name) } as Selection;
 	});
 
 	if (selections.length === 1) selections.push({ manufacturer: "intel", state: "idle", model: "" });
