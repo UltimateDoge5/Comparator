@@ -31,7 +31,7 @@ const Selector = ({ setCPU, setModelName, initialSelection }: SelectorProps) => 
 		if (barVisible) {
 			// The additional 30 is for the delay before the bar starts to decrease for the user
 			let percent = 130;
-			intervalRef.current = window.setInterval(async () => {
+			intervalRef.current = window.setInterval(() => {
 				percent -= 1;
 				if (percent <= 0) {
 					clearInterval(intervalRef.current);
@@ -50,20 +50,24 @@ const Selector = ({ setCPU, setModelName, initialSelection }: SelectorProps) => 
 	useEffect(() => {
 		if (selection.model.length > 3) {
 			setSelection({ state: "loading" });
-			fetchCPU(selection.manufacturer, selection.model).then((cpu) => {
-				if (cpu.error) {
-					setSelection({ state: "error" });
-					toast.error(cpu.error.text);
-					return;
-				}
+			fetchCPU(selection.manufacturer, selection.model)
+				.then((cpu) => {
+					if (cpu.error) {
+						setSelection({ state: "error" });
+						toast.error(cpu.error.text);
+						return;
+					}
 
-				// Update the URL after successful fetch
-				setModelName(`${selection.manufacturer}-${selection.model.toLowerCase()}`);
-				setSelection({ state: "success" });
-				setCPU(cpu.data);
-			});
+					// Update the URL after successful fetch
+					setModelName(`${selection.manufacturer}-${selection.model.toLowerCase()}`);
+					setSelection({ state: "success" });
+					setCPU(cpu.data);
+				})
+				.catch(() => {
+					setSelection({ state: "error" });
+					toast.error("An error occurred while fetching the CPU. Try again later.");
+				});
 		}
-		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [selection.manufacturer, selection.model]);
 
 	// Manage the search tip results
@@ -73,6 +77,7 @@ const Selector = ({ setCPU, setModelName, initialSelection }: SelectorProps) => 
 			clearTimeout(searchRef.current);
 
 			// Start a new search
+			// eslint-disable-next-line @typescript-eslint/no-misused-promises
 			searchRef.current = window.setTimeout(async () => {
 				const res = await fetch(`/api/tip?manufacturer=${selection.manufacturer}&model=${tempModel}`);
 
@@ -99,17 +104,22 @@ const Selector = ({ setCPU, setModelName, initialSelection }: SelectorProps) => 
 			<button
 				onClick={() => {
 					setRefetch(true);
-					fetchCPU(selection.manufacturer, selection.model, true).then((cpu) => {
-						setRefetch(false);
-						if (cpu.error) {
-							toast.error(
-								cpu.error.code === 504 ? "The server is taking too long to respond. Try again later." : cpu.error.text
-							);
-							return;
-						}
-						toast.success("Successfully re-fetched the CPU!");
-						setCPU(cpu.data);
-					});
+					fetchCPU(selection.manufacturer, selection.model, true)
+						.then((cpu) => {
+							setRefetch(false);
+							if (cpu.error) {
+								toast.error(
+									cpu.error.code === 504 ? "The server is taking too long to respond. Try again later." : cpu.error.text
+								);
+								return;
+							}
+							toast.success("Successfully re-fetched the CPU!");
+							setCPU(cpu.data);
+						})
+						.catch(() => {
+							setRefetch(false);
+							toast.error("An error occurred while fetching the CPU. Try again later.");
+						});
 				}}
 				title="Reload data without cache"
 				disabled={selection.state !== "success" || refetch}

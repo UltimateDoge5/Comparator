@@ -1,5 +1,5 @@
-import { test, expect } from "vitest";
-import { getMemoryDetails } from "../src/util/scrapers/amd";
+import { expect, test } from "vitest";
+import { getMemoryDetails } from "@/util/scrapers/amd";
 
 /**
  *  System Memory Type  DDR4 - Up to 3200MHz

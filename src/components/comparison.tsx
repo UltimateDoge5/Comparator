@@ -5,9 +5,9 @@ import type { Selection } from "./selector";
 import Selector from "./selector";
 import { Transition } from "@headlessui/react";
 import { ToastContainer } from "react-toastify";
-import type { Table } from "../util/renderers";
-import { RenderTwoColumnTable } from "../util/renderers";
-import { colorDiff, formatNumber } from "../util/formatting";
+import type { Table } from "@/util/renderers";
+import { RenderTwoColumnTable } from "@/util/renderers";
+import { colorDiff, formatNumber } from "@/util/formatting";
 
 const Comparison = ({ models }: { models: Selection[] }) => {
 	const [cpus, setCpus] = useState<(CPU | null)[]>([null, null]);
@@ -88,8 +88,8 @@ const Memory = ({ cpus }: { cpus: CPU[] }) => {
 		.map((type) => type?.type);
 
 	const memorySpeeds = matchingTypes.map((type) => {
-		const a = cpus[0].memory.types.find((type2) => type2?.type === type)?.speed as number;
-		const b = cpus[1].memory.types.find((type2) => type2?.type === type)?.speed as number;
+		const a = cpus[0].memory.types.find((type2) => type2?.type === type)?.speed;
+		const b = cpus[1].memory.types.find((type2) => type2?.type === type)?.speed;
 		return { type, a, b };
 	});
 

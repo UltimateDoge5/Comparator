@@ -4,18 +4,35 @@ import type { CPU, Memory } from "../../../CPU";
 import { normaliseMarket } from "../formatting";
 import elementSelector from "../selectors";
 import type { Redis } from "@upstash/redis";
+import { reject, resolve, type ScrapeResult } from "./result";
 
 let $: CheerioAPI;
 
-const scrapeIntel = async (redis: Redis, model: string, noCache: boolean) =>
-	new Promise<CPU>(async (resolve, reject) => {
-		let cpu: CPU | null = !noCache ? (await redis.json.get(`intel-${model.replace(/ /g, "-")}`, "$"))?.[0] as CPU | null : null;
-		if (cpu !== null && cpu?.schemaVer === parseFloat(process.env.MIN_SCHEMA_VERSION)) return resolve(cpu);
+const scrapeIntel = async (redis: Redis, model: string, noCache: boolean): Promise<ScrapeResult> => {
+	if (!noCache) {
+		const cache = (await redis.json.get(`intel-${model.replace(/ /g, "-")}`, "$")) as [CPU] | null;
+		const cpu = cache?.[0];
+		if (cpu !== undefined && cpu?.schemaVer === parseFloat(process.env.MIN_SCHEMA_VERSION)) return resolve(cpu);
+	}
 
-		const token = (await redis.get<string>("intel-token")) ?? (await refreshToken(redis));
+	const token = (await redis.get<string>("intel-token")) ?? (await refreshToken(redis));
 
-		// Get the url
-		let query = await fetch("https://platform.cloud.coveo.com/rest/search/v2?f:@tabfilter=[Products]", {
+	// Get the url
+	let query = await fetch("https://platform.cloud.coveo.com/rest/search/v2?f:@tabfilter=[Products]", {
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json",
+			Authorization: "Bearer " + token,
+		},
+		body: JSON.stringify({
+			q: model,
+			numberOfResults: 1,
+		}),
+	});
+
+	if (query.status === 401 || query.status === 419) {
+		const token = await refreshToken(redis);
+		query = await fetch("https://platform.cloud.coveo.com/rest/search/v2?f:@tabfilter=[Products]", {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
@@ -26,100 +43,85 @@ const scrapeIntel = async (redis: Redis, model: string, noCache: boolean) =>
 				numberOfResults: 1,
 			}),
 		});
+	}
 
-		if (query.status === 401 || query.status === 419) {
-			const token = await refreshToken(redis);
-			query = await fetch("https://platform.cloud.coveo.com/rest/search/v2?f:@tabfilter=[Products]", {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-					Authorization: "Bearer " + token,
-				},
-				body: JSON.stringify({
-					q: model,
-					numberOfResults: 1,
-				}),
-			});
-		}
+	if (!query.ok) {
+		console.error(await query.text());
+		return reject({ code: 500, message: "Error while fetching the CPU data" });
+	}
 
-		if (!query.ok) {
-			console.error(await query.text());
-			return reject({ code: 500, message: "Error while fetching the CPU data" });
-		}
+	const data = (await query.json()) as { results: { uri: string }[] };
+	let url = data?.results[0]?.uri;
 
-		const data = (await query.json()) as { results: { uri: string }[] };
-		let url = data?.results[0]?.uri;
+	if (!url) return reject({ code: 404, message: "CPU not found" });
 
-		if (!url) return reject({ code: 404, message: "CPU not found" });
+	// Sometimes the url path is good, but the last part is wrong
+	if (!url.includes("specifications")) {
+		const temp = url.split("/");
+		temp.pop();
+		temp.push("specifications");
+		url = temp.join("/");
+	}
 
-		// Sometimes the url path is good, but the last part is wrong
-		if (!url.includes("specifications")) {
-			const temp = url.split("/");
-			temp.pop();
-			temp.push("specifications");
-			url = temp.join("/");
-		}
+	// Sometimes the search url is from a different language
+	if (!url.includes("us/en")) url = url.replace(/www(\/\w{2}\/)(\w{2})/g, "www/us/en");
+	// Sometimes the url doesn't end with .html
+	if (!url.endsWith(".html")) url += ".html";
 
-		// Sometimes the search url is from a different language
-		if (!url.includes("us/en")) url = url.replace(/www(\/\w{2}\/)(\w{2})/g, "www/us/en");
-		// Sometimes the url doesn't end with .html
-		if (!url.endsWith(".html")) url += ".html";
+	if (process.env.NODE_ENV !== "production") console.log("Fetching page: ", url);
 
-		if (process.env.NODE_ENV !== "production") console.log("Fetching page: ", url);
+	// Get the data
+	const page = await fetch(url);
 
-		// Get the data
-		const page = await fetch(url);
+	if (!page.ok) {
+		console.error(page.statusText, url, model);
+		return reject({ code: 500, message: "Error while fetching the CPU data" });
+	}
 
-		if (!page.ok) {
-			console.error(page.statusText, url, model);
-			return reject({ code: 500, message: "Error while fetching the CPU data" });
-		}
+	$ = load(await page.text());
 
-		$ = load(await page.text());
+	let cpuName = getParameter("Processor Number") ?? $(".headline").first().text().trim();
+	if (!cpuName?.includes("Intel")) cpuName = "Intel " + cpuName;
 
-		let cpuName = getParameter("Processor Number") ?? $(".headline").first().text().trim();
-		if (!cpuName?.includes("Intel")) cpuName = "Intel " + cpuName;
+	model = model.replace(/ /g, "-").toLowerCase();
 
-		model = model.replace(/ /g, "-").toLowerCase();
-
-		cpu = {
-			name: cpuName,
-			manufacturer: "intel",
-			MSRP: getPrice(getParameter("Recommended Customer Price")),
-			marketSegment: normaliseMarket(getParameter("Vertical Segment")),
-			lithography: getParameter("Lithography"),
-			cache: getFloatParameter("Cache"),
-			cores: {
-				total: getFloatParameter("Total Cores"),
-				efficient: getFloatParameter("# of Efficient-cores"),
-				performance: getFloatParameter("# of Performance-cores"),
+	const cpu: CPU = {
+		name: cpuName,
+		manufacturer: "intel",
+		MSRP: getPrice(getParameter("Recommended Customer Price")),
+		marketSegment: normaliseMarket(getParameter("Vertical Segment")),
+		lithography: getParameter("Lithography"),
+		cache: getFloatParameter("Cache"),
+		cores: {
+			total: getFloatParameter("Total Cores"),
+			efficient: getFloatParameter("# of Efficient-cores"),
+			performance: getFloatParameter("# of Performance-cores"),
+		},
+		threads: getFloatParameter("Total Threads"),
+		baseFrequency: getFloatParameter("Processor Base Frequency") ?? getFloatParameter("Performance-core Base Frequency"),
+		maxFrequency: getFloatParameter("Max Turbo Frequency"),
+		tdp: getFloatParameter("Configurable TDP-up") ?? getFloatParameter("TDP") ?? getFloatParameter("Maximum Turbo Power"),
+		launchDate: getParameter("Launch Date")!,
+		memory: {
+			types: getMemoryDetails(),
+			maxSize: getFloatParameter("Max Memory Size"),
+		},
+		graphics: cpuName?.includes("F")
+			? false
+			: {
+					baseFrequency: getFloatParameter("Graphics Base Frequency"),
+					maxFrequency: getFloatParameter("Graphics Max Dynamic Frequency"),
+					displays: getFloatParameter("Max # of Displays Supported") ?? getFloatParameter("# of Displays Supported"),
 			},
-			threads: getFloatParameter("Total Threads"),
-			baseFrequency: getFloatParameter("Processor Base Frequency") ?? getFloatParameter("Performance-core Base Frequency"),
-			maxFrequency: getFloatParameter("Max Turbo Frequency"),
-			tdp: getFloatParameter("Configurable TDP-up") ?? getFloatParameter("TDP") ?? getFloatParameter("Maximum Turbo Power"),
-			launchDate: getParameter("Launch Date")!,
-			memory: {
-				types: getMemoryDetails(),
-				maxSize: getFloatParameter("Max Memory Size"),
-			},
-			graphics: cpuName?.includes("F")
-				? false
-				: {
-						baseFrequency: getFloatParameter("Graphics Base Frequency"),
-						maxFrequency: getFloatParameter("Graphics Max Dynamic Frequency"),
-						displays: getFloatParameter("Max # of Displays Supported") ?? getFloatParameter("# of Displays Supported"),
-				  },
-			source: url,
-			ref: "/cpu/intel-" + model,
-			scrapedAt: new Date().toString(),
-			schemaVer: parseFloat(process.env.MIN_SCHEMA_VERSION),
-		};
+		source: url,
+		ref: "/cpu/intel-" + model,
+		scrapedAt: new Date().toString(),
+		schemaVer: parseFloat(process.env.MIN_SCHEMA_VERSION),
+	};
 
-		// if (process.env.NODE_ENV === "production" || req.query["no-cache"] !== undefined)
-		if (process.env.NODE_ENV !== "test") await redis.json.set(`intel-${model}`, "$", cpu as Record<string, any>);
-		return resolve(cpu);
-	});
+	if (process.env.NODE_ENV !== "test") await redis.json.set(`intel-${model}`, "$", cpu as unknown as Record<string, never>);
+	return resolve(cpu);
+};
 
 const getParameter = (name: string) =>
 	elementSelector($, ".tech-label span", name)?.parent().parent().find(".tech-data span").text() ?? null;
