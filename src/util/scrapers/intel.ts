@@ -12,7 +12,7 @@ const scrapeIntel = async (redis: Redis, model: string, noCache: boolean): Promi
 	if (!noCache) {
 		const cache = (await redis.json.get(`intel-${model.replace(/ /g, "-")}`, "$")) as [CPU] | null;
 		const cpu = cache?.[0];
-		if (cpu !== undefined && cpu?.schemaVer === parseFloat(process.env.MIN_SCHEMA_VERSION)) return resolve(cpu);
+		if (cpu !== undefined && cpu?.schemaVer === parseFloat(process.env.MIN_SCHEMA_VERSION)) return resolve({ ...cpu, fromCache: true });
 	}
 
 	const token = (await redis.get<string>("intel-token")) ?? (await refreshToken(redis));
@@ -85,6 +85,15 @@ const scrapeIntel = async (redis: Redis, model: string, noCache: boolean): Promi
 
 	model = model.replace(/ /g, "-").toLowerCase();
 
+	let graphics: false | CPU["graphics"] = false;
+	if (cpuName?.includes("F")) {
+		graphics = {
+			baseFrequency: getFloatParameter("Graphics Base Frequency"),
+			maxFrequency: getFloatParameter("Graphics Max Dynamic Frequency"),
+			displays: getFloatParameter("Max # of Displays Supported") ?? getFloatParameter("# of Displays Supported"),
+		};
+	}
+
 	const cpu: CPU = {
 		name: cpuName,
 		manufacturer: "intel",
@@ -106,13 +115,7 @@ const scrapeIntel = async (redis: Redis, model: string, noCache: boolean): Promi
 			types: getMemoryDetails(),
 			maxSize: getFloatParameter("Max Memory Size"),
 		},
-		graphics: cpuName?.includes("F")
-			? false
-			: {
-					baseFrequency: getFloatParameter("Graphics Base Frequency"),
-					maxFrequency: getFloatParameter("Graphics Max Dynamic Frequency"),
-					displays: getFloatParameter("Max # of Displays Supported") ?? getFloatParameter("# of Displays Supported"),
-			},
+		graphics,
 		source: url,
 		ref: "/cpu/intel-" + model,
 		scrapedAt: new Date().toString(),
@@ -120,7 +123,7 @@ const scrapeIntel = async (redis: Redis, model: string, noCache: boolean): Promi
 	};
 
 	if (process.env.NODE_ENV !== "test") await redis.json.set(`intel-${model}`, "$", cpu as unknown as Record<string, never>);
-	return resolve(cpu);
+	return resolve({ ...cpu, fromCache: false });
 };
 
 const getParameter = (name: string) =>

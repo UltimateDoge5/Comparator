@@ -17,6 +17,7 @@ export interface CPU {
 	schemaVer: number;
 	// Url to the cpu page
 	scrapedAt?: string;
+	fromCache?: boolean;
 	ref: string;
 }
 

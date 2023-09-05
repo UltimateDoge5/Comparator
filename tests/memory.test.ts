@@ -1,5 +1,6 @@
 import { expect, test } from "vitest";
-import { getMemoryDetails } from "@/util/scrapers/amd";
+// Non-relative import breaks tests
+import { getMemoryDetails } from "../src/util/scrapers/amd";
 
 /**
  *  System Memory Type  DDR4 - Up to 3200MHz

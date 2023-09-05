@@ -13,7 +13,7 @@ const scrapeAMD = async (redis: Redis, model: string, noCache: boolean): Promise
 	if (!noCache) {
 		const cache = (await redis.json.get(`intel-${model.replace(/ /g, "-")}`, "$")) as [CPU] | null;
 		const cpu = cache?.[0];
-		if (cpu !== undefined && cpu?.schemaVer === parseFloat(process.env.MIN_SCHEMA_VERSION)) return resolve(cpu);
+		if (cpu !== undefined && cpu?.schemaVer === parseFloat(process.env.MIN_SCHEMA_VERSION)) return resolve({ ...cpu, fromCache: true });
 	}
 
 	const url = AMD_PRODUCTS.find((item) => item.name.replace("™", "").toLowerCase() === model)?.url;
@@ -27,8 +27,7 @@ const scrapeAMD = async (redis: Redis, model: string, noCache: boolean): Promise
 		method: "POST",
 		body: JSON.stringify({
 			url: url,
-			userAgent:
-				"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.125 Safari/537.36",
+			userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36",
 			gotoOptions: {
 				waitUntil: "domcontentloaded",
 			},
@@ -53,6 +52,16 @@ const scrapeAMD = async (redis: Redis, model: string, noCache: boolean): Promise
 	model = model.replace(/ /g, "-").toLowerCase();
 	const name = $(".section-title").text().trim();
 
+	let graphics: false | CPU["graphics"] = false;
+
+	if (getParameter("Integrated Graphics") === "Yes") {
+		graphics = {
+			baseFrequency:
+				getFloatParameter("GPU Base") ?? getFloatParameter("Graphics Base Frequency") ?? getFloatParameter("Graphics Frequency"),
+			maxFrequency: getFloatParameter("Graphics Frequency") ?? getFloatParameter("Graphics Max Dynamic Frequency"),
+			displays: getFloatParameter("Max Displays") ?? getFloatParameter("Max # of Displays Supported"),
+		};
+	}
 	const cpu: CPU = {
 		name,
 		manufacturer: "amd",
@@ -74,25 +83,15 @@ const scrapeAMD = async (redis: Redis, model: string, noCache: boolean): Promise
 			types: getMemoryDetails(),
 			maxSize: getFloatParameter("Max Memory Size (dependent on memory type)") ?? getFloatParameter("Max. Memory"),
 		},
-		graphics:
-			getParameter("Integrated Graphics") === "Yes"
-				? {
-						baseFrequency:
-							getFloatParameter("GPU Base") ??
-							getFloatParameter("Graphics Base Frequency") ??
-							getFloatParameter("Graphics Frequency"),
-						maxFrequency: getFloatParameter("Graphics Frequency") ?? getFloatParameter("Graphics Max Dynamic Frequency"),
-						displays: getFloatParameter("Max Displays") ?? getFloatParameter("Max # of Displays Supported"),
-				}
-				: false,
+		graphics,
 		source: url,
 		ref: "/cpu/" + model,
 		scrapedAt: new Date().toString(),
 		schemaVer: parseFloat(process.env.MIN_SCHEMA_VERSION),
 	};
 
-	if (process.env.NODE_ENV !== "test") await redis.json.set(model, "$", cpu as unknown as Record<string, unknown>);
-	return resolve(cpu);
+	if (process.env.NODE_ENV !== "test" && sumNulls(cpu) < 6) await redis.json.set(model, "$", cpu as unknown as Record<string, unknown>);
+	return resolve({ ...cpu, fromCache: false });
 };
 
 const getParameter = (name: string) => elementSelector($, ".field__label", name)?.parent().find(".field__item").text().trim() ?? null;
@@ -208,6 +207,14 @@ export const getMemoryDetails = (testObj?: {
 
 	// Remove duplicates
 	return results?.filter((value, index, self) => self.findIndex((v) => v.type === value.type) === index) ?? [];
+};
+
+const sumNulls = (cpu: CPU) => {
+	let nulls = 0;
+	for (const key in cpu) {
+		if (cpu[key as keyof typeof cpu] === null) nulls++;
+	}
+	return nulls;
 };
 
 export default scrapeAMD;

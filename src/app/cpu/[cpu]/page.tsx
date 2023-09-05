@@ -52,13 +52,28 @@ const Page = async ({ searchParams }: { searchParams: { cpu: string; refetch: st
 	let cpu = await fetchCPUEdge(redis, searchParams.cpu, searchParams.refetch == "true");
 
 	// Check cpu for null values if there are too many above a certain threshold, refetch
-	let nulls = 0
+	let nulls = 0;
 	for (const key in cpu) {
-		if (cpu[key as keyof typeof cpu ] === null) nulls++
+		if (cpu[key as keyof typeof cpu] === null) nulls++;
 	}
 
+	console.log(nulls);
 	if (nulls >= 6) {
-		cpu = await fetchCPUEdge(redis, searchParams.cpu, true);
+		if (cpu.fromCache === true) {
+			cpu = await fetchCPUEdge(redis, searchParams.cpu, true);
+
+			// Check again
+			nulls = 0;
+			for (const key in cpu) {
+				if (cpu[key as keyof typeof cpu] === null) nulls++;
+			}
+			console.log(nulls);
+
+			// If there are still too many nulls, return error
+			if (nulls >= 6) return <ErrorScreen />;
+		} else {
+			return <ErrorScreen />;
+		}
 	}
 
 	return (
@@ -76,6 +91,15 @@ const Page = async ({ searchParams }: { searchParams: { cpu: string; refetch: st
 	);
 };
 
+const ErrorScreen = () => (
+	<main className="text-white">
+		<div className="mx-auto mt-6 w-full border-0 border-gray-200/50 bg-white/20 p-4 text-lg md:mb-12 md:w-3/5 md:rounded-md md:border md:p-6">
+			<p className="text-center text-2xl">There was an error fetching the CPU.</p>
+			<p className="text-center"> The recieved data was malformed and unusable</p>
+		</div>
+	</main>
+);
+
 const Cores = ({ cpu }: { cpu: CPU }) => {
 	const cores = cpu.cores;
 
@@ -91,6 +115,7 @@ const Cores = ({ cpu }: { cpu: CPU }) => {
 		</>
 	);
 };
+
 const Memory = ({ cpu }: { cpu: CPU }) => {
 	if (cpu.memory.types === null) return <>N/A</>;
 
