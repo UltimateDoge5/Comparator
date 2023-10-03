@@ -30,6 +30,7 @@ const scrapeIntel = async (redis: Redis, model: string, noCache: boolean): Promi
 		}),
 	});
 
+	console.log("Search query status:", query.status);
 	if (query.status === 401 || query.status === 419) {
 		const token = await refreshToken(redis);
 		query = await fetch("https://platform.cloud.coveo.com/rest/search/v2?f:@tabfilter=[Products]", {
@@ -47,7 +48,7 @@ const scrapeIntel = async (redis: Redis, model: string, noCache: boolean): Promi
 
 	if (!query.ok) {
 		console.error(await query.text());
-		return reject({ code: 500, message: "Error while fetching the CPU data" });
+		return reject({ code: 500, message: "Error while searching for cpu data" });
 	}
 
 	const data = (await query.json()) as { results: { uri: string }[] };
@@ -71,11 +72,16 @@ const scrapeIntel = async (redis: Redis, model: string, noCache: boolean): Promi
 	if (process.env.NODE_ENV !== "production") console.log("Fetching page: ", url);
 
 	// Get the data
-	const page = await fetch(url);
+	const page = await fetch(url, {
+		headers: {
+			"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36",
+		},
+	});
 
 	if (!page.ok) {
+		console.error("Error while fetching the CPU data from the website");
 		console.error(page.statusText, url, model);
-		return reject({ code: 500, message: "Error while fetching the CPU data" });
+		return reject({ code: 500, message: "Error while fetching the CPU data from the website" });
 	}
 
 	$ = load(await page.text());

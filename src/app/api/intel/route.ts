@@ -1,4 +1,4 @@
-import { normaliseIntel } from "../../../util/formatting";
+import { normaliseIntel } from "@/util/formatting";
 import scrapeIntel from "../../../util/scrapers/intel";
 import { NextResponse } from "next/server";
 import { Redis } from "@upstash/redis";

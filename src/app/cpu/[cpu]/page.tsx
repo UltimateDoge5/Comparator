@@ -57,7 +57,6 @@ const Page = async ({ searchParams }: { searchParams: { cpu: string; refetch: st
 		if (cpu[key as keyof typeof cpu] === null) nulls++;
 	}
 
-	console.log(nulls);
 	if (nulls >= 6) {
 		if (cpu.fromCache === true) {
 			cpu = await fetchCPUEdge(redis, searchParams.cpu, true);

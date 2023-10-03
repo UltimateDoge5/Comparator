@@ -55,12 +55,4 @@ export const fetchCPUEdge = async (redis: Redis, model: string, noCache: boolean
 	return result.cpu!;
 };
 
-export interface Result {
-	data: CPU;
-	error: {
-		text: string;
-		code: number;
-	} | null;
-}
-
 export default fetchCPU;

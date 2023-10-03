@@ -11,7 +11,7 @@ let $: CheerioAPI;
 
 const scrapeAMD = async (redis: Redis, model: string, noCache: boolean): Promise<ScrapeResult> => {
 	if (!noCache) {
-		const cache = (await redis.json.get(`intel-${model.replace(/ /g, "-")}`, "$")) as [CPU] | null;
+		const cache = (await redis.json.get(`amd-${model.replace(/ /g, "-")}`, "$")) as [CPU] | null;
 		const cpu = cache?.[0];
 		if (cpu !== undefined && cpu?.schemaVer === parseFloat(process.env.MIN_SCHEMA_VERSION)) return resolve({ ...cpu, fromCache: true });
 	}
@@ -22,7 +22,7 @@ const scrapeAMD = async (redis: Redis, model: string, noCache: boolean): Promise
 		return reject({ message: "CPU not found", code: 404 });
 	}
 
-	//Get the specs page
+	//Get the spec page
 	const specsPage = await fetch(`https://${process.env.BROWSERLESS_URL}/content?token=${process.env.BROWSERLESS_TOKEN}`, {
 		method: "POST",
 		body: JSON.stringify({
